@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIFF 購物車測試</title>
+  <script>
+    window.onerror = function(msg, url, line) {
+      const errorDiv = document.createElement("div");
+      errorDiv.style.cssText = "color: red; font-size: 12px; background: #fee; padding: 10px; margin-bottom: 10px; text-align: left; word-break: break-all;";
+      errorDiv.innerHTML = `❌ 錯誤: ${msg}<br>來源: ${url}<br>行數: ${line}`;
+      document.body.prepend(errorDiv);
+      return false;
+    };
+  </script>
+  <!-- 載入 LINE SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; text-align: center; }
+    button { padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; width: 100%; margin-top: 15px; cursor: pointer; }
+    .btn-green { background-color: #06C755; color: white; }
+    .btn-gray { background-color: #888; color: white; font-size: 14px; }
+    #status { margin-top: 15px; font-weight: bold; font-size: 16px; color: blue; }
+    #log { margin-top: 20px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h2>🚀 LIFF Ready 規範測試</h2>
+  <div id="status">DOMContentLoaded 準備中...</div>
+
+  <button class="btn-green" onclick="testSendMessage()">📤 發送測試訊息</button>
+
+  <h3>📋 執行紀錄 (Log)：</h3>
+  <div id="log"></div>
+
+  <script>
+    function addLog(msg) {
+      const now = new Date();
+      const timeString = `${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
+      document.getElementById("log").innerHTML += `<br><span style="color:gray;">[${timeString}]</span> ${msg}`;
+      console.log(`[${timeString}]`, msg);
+    }
+
+    const LIFF_ID = "2011068238-PFTKKAEP";
+    let isLiffInit = false; 
+
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("status").innerText = "1. DOM 已就緒，準備環境檢查...";
+      addLog("=== 🚀 系統啟動與環境檢查 ===");
+      
+      addLog("當前網址: <br><span style='word-break: break-all; font-size: 10px; color: blue;'>" + window.location.href + "</span>");
+      
+      if (typeof liff === 'undefined') {
+        addLog("❌ 致命錯誤：LINE SDK 尚未載入或載入失敗！");
+        document.getElementById("status").innerHTML = "<span style='color:red;'>❌ SDK 遺失</span>";
+        return;
+      }
+      addLog("LINE SDK 已確認載入，準備呼叫 liff.init...");
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("⏰ liff.init 執行超過 10 秒無回應"));
+        }, 10000);
+      });
+
+      addLog(`👉 開始執行 liff.init (ID: ${LIFF_ID})`);
+      document.getElementById("status").innerText = "2. liff.init 執行中...";
+
+      Promise.race([
+        liff.init({ liffId: LIFF_ID }),
+        timeoutPromise
+      ])
+      .then(() => {
+        isLiffInit = true;
+        addLog("✅ liff.init Promise 回傳成功 (Resolved)！");
+        
+        addLog(`環境: isInClient=${liff.isInClient()}, isLoggedIn=${liff.isLoggedIn()}`);
+
+        if (!liff.isInClient() && !liff.isLoggedIn()) {
+          addLog("⚠️ 判定為未登入，顯示強制授權按鈕");
+          document.getElementById("status").innerHTML = `
+            <p style="color: red; font-size:14px;">⚠️ 尚未授權此應用程式</p>
+            <button class="btn-green" onclick="forceLogin()">點此進行 LINE 授權</button>
+          `;
+        } else {
+          addLog("✅ 授權與環境皆正常，系統就緒！");
+          document.getElementById("status").style.color = "green";
+          document.getElementById("status").innerText = "✅ LIFF 初始化成功！";
+        }
+      })
+      .catch((err) => {
+        if(isLiffInit) return;
+        
+        addLog(`❌ 捕捉到錯誤 (Rejected)：${err.name} - ${err.message}`);
+        
+        document.getElementById("status").innerHTML = `
+          <div style="color: red; font-weight: bold;">❌ 初始化失敗或逾時</div>
+          <button class="btn-green" onclick="forceLogin()">🛡️ 強制跳轉至 LINE 授權</button>
+          <button class="btn-gray" onclick="reloadLiff()">🔄 一般重新載入</button>
+        `;
+      });
+    });
+
+    function forceLogin() {
+      addLog("👉 點擊了強制跳脫 iframe 轉址按鈕");
+      addLog("準備轉向: https://liff.line.me/" + LIFF_ID);
+      setTimeout(() => {
+        window.top.location.href = "https://liff.line.me/" + LIFF_ID;
+      }, 500);
+    }
+
+    function testSendMessage() {
+      if (!isLiffInit) {
+        alert("⚠️ LIFF 尚未初始化完成，請稍候或點擊強制授權！");
+        return;
+      }
+      if (!liff.isInClient()) {
+        alert("⚠️ 請從手機 LINE 聊天室點擊開啟！");
+        return;
+      }
+      
+      addLog("📤 準備發送測試訊息...");
+      liff.sendMessages([{ type: 'text', text: '1/2"CABLE 10' }])
+        .then(() => {
+          addLog("🎉 訊息發送 API 回傳成功！準備關閉視窗");
+          alert("🎉 訊息發送成功！");
+          liff.closeWindow();
+        })
+        .catch((err) => {
+          addLog(`❌ 訊息發送失敗：${err.name} - ${err.message}`);
+          alert("❌ 傳送失敗：\n" + err.message);
+        });
+    }
+
+    function reloadLiff() {
+      addLog("👉 點擊了一般重新載入按鈕");
+      setTimeout(() => {
+        window.top.location.href = "https://script.google.com/macros/s/AKfycbwqy_q6_pqmlZHrilDaoKd_xlVVeKpV85jfCYYR5APXe483tXAbGZmJqrrcqR_OJ0wX/exec"; 
+      }, 500);
+    }
+  </script>
+</body>
+</html>
