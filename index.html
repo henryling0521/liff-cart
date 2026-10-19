@@ -3,141 +3,203 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIFF 購物車測試</title>
-  <script>
-    window.onerror = function(msg, url, line) {
-      const errorDiv = document.createElement("div");
-      errorDiv.style.cssText = "color: red; font-size: 12px; background: #fee; padding: 10px; margin-bottom: 10px; text-align: left; word-break: break-all;";
-      errorDiv.innerHTML = `❌ 錯誤: ${msg}<br>來源: ${url}<br>行數: ${line}`;
-      document.body.prepend(errorDiv);
-      return false;
-    };
-  </script>
-  <!-- 載入 LINE SDK -->
+  <title>批次領退料購物車</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; text-align: center; }
-    button { padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; width: 100%; margin-top: 15px; cursor: pointer; }
-    .btn-green { background-color: #06C755; color: white; }
-    .btn-gray { background-color: #888; color: white; font-size: 14px; }
-    #status { margin-top: 15px; font-weight: bold; font-size: 16px; color: blue; }
-    #log { margin-top: 20px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; font-size: 12px; }
+    body { font-family: sans-serif; padding: 20px; background-color: #f9f9f9; }
+    .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; margin-top: 0; }
+    label { font-weight: bold; margin-top: 10px; display: block; color: #555; }
+    select, input { padding: 12px; margin: 5px 0 15px 0; width: 100%; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+    button { padding: 12px; font-size: 16px; width: 100%; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+    .add-btn { background-color: #007bff; color: white; margin-bottom: 20px; }
+    .submit-btn { background-color: #06C755; color: white; margin-top: 10px; }
+    ul { list-style-type: none; padding: 0; margin: 0; }
+    li { background: #f4f4f4; margin: 8px 0; padding: 12px; display: flex; justify-content: space-between; border-radius: 5px; border-left: 4px solid #007bff; }
+    .delete-btn { color: red; font-size: 14px; cursor: pointer; border: none; background: none; padding: 0; width: auto; font-weight: normal; }
+    #status-box { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-weight: bold; background: #eef; color: #333; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>🛒 批次領/退料清單</h2>
+    
+    <!-- 狀態顯示區與強制授權按鈕 -->
+    <div id="status-box">LIFF 系統初始化中...</div>
+    
+    <label>📦 大類別：</label>
+    <select id="mainCategory" onchange="updateModels()">
+      <option value="">🔄 正在從系統載入資料...</option>
+    </select>
+    
+    <label>🏷️ 物料型號：</label>
+    <select id="itemModel">
+      <option value="">請先選擇大類別</option>
+    </select>
+    
+    <label>🔢 數量：</label>
+    <input type="number" id="itemQty" placeholder="請輸入數量" min="1">
+    
+    <button class="add-btn" onclick="addToList()">➕ 加入清單</button>
 
-  <h2>🚀 LIFF Ready 規範測試</h2>
-  <div id="status">DOMContentLoaded 準備中...</div>
+    <ul id="cartList"></ul>
 
-  <button class="btn-green" onclick="testSendMessage()">📤 發送測試訊息</button>
-
-  <h3>📋 執行紀錄 (Log)：</h3>
-  <div id="log"></div>
+    <button class="submit-btn" id="submitBtn" onclick="submitToLine()" disabled>✅ 確認送出至系統</button>
+  </div>
 
   <script>
-    function addLog(msg) {
-      const now = new Date();
-      const timeString = `${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
-      document.getElementById("log").innerHTML += `<br><span style="color:gray;">[${timeString}]</span> ${msg}`;
-      console.log(`[${timeString}]`, msg);
-    }
+    // ==========================================
+    // ⚠️ 基礎設定區 (請替換為你的真實網址與 ID)
+    // ==========================================
+    const LIFF_ID = "2011068238-PFTKKAEP"; 
+    // 請將下方替換成你剛剛發佈的 GAS「網頁應用程式網址」
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwqy_q6_pqmlZHrilDaoKd_xlVVeKpV85jfCYYR5APXe483tXAbGZmJqrrcqR_OJ0wX/exec"; 
+    
+    let isLiffInit = false;
+    let cart = [];
+    let materialsData = {}; // 用來存放從雲端抓下來的分類資料
 
-    const LIFF_ID = "2011068238-PFTKKAEP";
-    let isLiffInit = false; 
+    // ==========================================
+    // 1. 系統載入與 LIFF 初始化
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", () => {
+      // 發起非同步抓取雲端表單資料
+      fetchMaterials();
 
-    document.addEventListener("DOMContentLoaded", function() {
-      document.getElementById("status").innerText = "1. DOM 已就緒，準備環境檢查...";
-      addLog("=== 🚀 系統啟動與環境檢查 ===");
-      
-      addLog("當前網址: <br><span style='word-break: break-all; font-size: 10px; color: blue;'>" + window.location.href + "</span>");
-      
-      if (typeof liff === 'undefined') {
-        addLog("❌ 致命錯誤：LINE SDK 尚未載入或載入失敗！");
-        document.getElementById("status").innerHTML = "<span style='color:red;'>❌ SDK 遺失</span>";
-        return;
-      }
-      addLog("LINE SDK 已確認載入，準備呼叫 liff.init...");
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("⏰ liff.init 執行超過 10 秒無回應"));
-        }, 10000);
-      });
-
-      addLog(`👉 開始執行 liff.init (ID: ${LIFF_ID})`);
-      document.getElementById("status").innerText = "2. liff.init 執行中...";
-
-      Promise.race([
-        liff.init({ liffId: LIFF_ID }),
-        timeoutPromise
-      ])
+      // 啟動 LIFF
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("逾時")), 10000));
+      Promise.race([ liff.init({ liffId: LIFF_ID }), timeoutPromise ])
       .then(() => {
         isLiffInit = true;
-        addLog("✅ liff.init Promise 回傳成功 (Resolved)！");
-        
-        addLog(`環境: isInClient=${liff.isInClient()}, isLoggedIn=${liff.isLoggedIn()}`);
-
         if (!liff.isInClient() && !liff.isLoggedIn()) {
-          addLog("⚠️ 判定為未登入，顯示強制授權按鈕");
-          document.getElementById("status").innerHTML = `
-            <p style="color: red; font-size:14px;">⚠️ 尚未授權此應用程式</p>
-            <button class="btn-green" onclick="forceLogin()">點此進行 LINE 授權</button>
-          `;
+          showAuthButton(); // 未登入顯示強制跳轉按鈕
         } else {
-          addLog("✅ 授權與環境皆正常，系統就緒！");
-          document.getElementById("status").style.color = "green";
-          document.getElementById("status").innerText = "✅ LIFF 初始化成功！";
+          document.getElementById("status-box").innerHTML = "✅ 系統就緒";
+          document.getElementById("status-box").style.background = "#e6ffe6";
         }
       })
       .catch((err) => {
         if(isLiffInit) return;
-        
-        addLog(`❌ 捕捉到錯誤 (Rejected)：${err.name} - ${err.message}`);
-        
-        document.getElementById("status").innerHTML = `
-          <div style="color: red; font-weight: bold;">❌ 初始化失敗或逾時</div>
-          <button class="btn-green" onclick="forceLogin()">🛡️ 強制跳轉至 LINE 授權</button>
-          <button class="btn-gray" onclick="reloadLiff()">🔄 一般重新載入</button>
-        `;
+        showAuthButton(); // 卡死時顯示強制跳轉按鈕
       });
     });
 
-    function forceLogin() {
-      addLog("👉 點擊了強制跳脫 iframe 轉址按鈕");
-      addLog("準備轉向: https://liff.line.me/" + LIFF_ID);
-      setTimeout(() => {
-        window.top.location.href = "https://liff.line.me/" + LIFF_ID;
-      }, 500);
+    function showAuthButton() {
+      document.getElementById("status-box").innerHTML = `
+        <span style="color: red;">⚠️ 尚未授權或環境卡死</span><br>
+        <button onclick="forceLogin()" style="background: #00B900; color: white; margin-top: 10px;">🛡️ 點此進行 LINE 授權</button>
+      `;
     }
 
-    function testSendMessage() {
-      if (!isLiffInit) {
-        alert("⚠️ LIFF 尚未初始化完成，請稍候或點擊強制授權！");
-        return;
-      }
-      if (!liff.isInClient()) {
-        alert("⚠️ 請從手機 LINE 聊天室點擊開啟！");
-        return;
-      }
-      
-      addLog("📤 準備發送測試訊息...");
-      liff.sendMessages([{ type: 'text', text: '1/2"CABLE 10' }])
-        .then(() => {
-          addLog("🎉 訊息發送 API 回傳成功！準備關閉視窗");
-          alert("🎉 訊息發送成功！");
-          liff.closeWindow();
+    function forceLogin() {
+      window.top.location.href = "https://liff.line.me/" + LIFF_ID;
+    }
+
+    // ==========================================
+    // 2. 抓取與連動下拉選單 (核心邏輯)
+    // ==========================================
+    function fetchMaterials() {
+      // 向 GAS 發送帶有 action=getMaterials 的請求
+      fetch(GAS_API_URL + "?action=getMaterials")
+        .then(response => response.json())
+        .then(data => {
+          materialsData = data; // 將 JSON 存入變數
+          populateCategories(); // 建立大類別選單
         })
-        .catch((err) => {
-          addLog(`❌ 訊息發送失敗：${err.name} - ${err.message}`);
-          alert("❌ 傳送失敗：\n" + err.message);
+        .catch(err => {
+          console.error("讀取資料失敗", err);
+          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 資料載入失敗，請重整</option>';
         });
     }
 
-    function reloadLiff() {
-      addLog("👉 點擊了一般重新載入按鈕");
-      setTimeout(() => {
-        window.top.location.href = "https://script.google.com/macros/s/AKfycbwqy_q6_pqmlZHrilDaoKd_xlVVeKpV85jfCYYR5APXe483tXAbGZmJqrrcqR_OJ0wX/exec"; 
-      }, 500);
+    function populateCategories() {
+      const categorySelect = document.getElementById("mainCategory");
+      categorySelect.innerHTML = '<option value="">-- 請選擇大類別 --</option>';
+      
+      // 讀取物件中的所有鍵值 (大類別名稱)
+      for (const category in materialsData) {
+        let opt = document.createElement("option");
+        opt.value = category;
+        opt.textContent = category;
+        categorySelect.appendChild(opt);
+      }
+    }
+
+    function updateModels() {
+      const category = document.getElementById("mainCategory").value;
+      const modelSelect = document.getElementById("itemModel");
+      
+      modelSelect.innerHTML = '<option value="">-- 請選擇型號 --</option>';
+      
+      if (category && materialsData[category]) {
+        // 根據選擇的大類別，填入對應的型號
+        materialsData[category].forEach(model => {
+          let opt = document.createElement("option");
+          opt.value = model;
+          opt.textContent = model;
+          modelSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // ==========================================
+    // 3. 購物車邏輯 (加入清單與刪除)
+    // ==========================================
+    function addToList() {
+      let model = document.getElementById("itemModel").value;
+      let qty = document.getElementById("itemQty").value.trim();
+      
+      if(!model) return alert("請選擇物料型號！");
+      if(!qty || qty <= 0) return alert("請輸入正確的數量！");
+
+      // 組合格式："型號 空格 數量"，完美對應你後端 split(" ") 的邏輯
+      cart.push({ name: model, qty: qty, textStr: `${model} ${qty}` }); 
+      
+      updateCartView();
+      document.getElementById("itemQty").value = ""; // 清空數量
+    }
+
+    function removeFromList(index) {
+      cart.splice(index, 1);
+      updateCartView();
+    }
+
+    function updateCartView() {
+      let listHtml = "";
+      cart.forEach((item, index) => {
+        listHtml += `
+          <li>
+            <span>${item.name} <strong style="color:#007bff;">(${item.qty} 個)</strong></span>
+            <span class="delete-btn" onclick="removeFromList(${index})">❌移除</span>
+          </li>`;
+      });
+      document.getElementById("cartList").innerHTML = listHtml;
+      
+      // 如果購物車有東西，才啟用送出按鈕
+      document.getElementById("submitBtn").disabled = cart.length === 0;
+    }
+
+    // ==========================================
+    // 4. 送出至 LINE 聊天室
+    // ==========================================
+    function submitToLine() {
+      if(!isLiffInit || (!liff.isInClient() && !liff.isLoggedIn())) {
+         return alert("LIFF 尚未就緒或未登入，請先完成授權。");
+      }
+      if(cart.length === 0) return alert("清單是空的！");
+      
+      document.getElementById("submitBtn").innerText = "⏳ 傳送中...";
+      
+      let messageText = cart.map(item => item.textStr).join("\n");
+
+      liff.sendMessages([
+        { type: 'text', text: messageText }
+      ]).then(() => {
+        liff.closeWindow(); 
+      }).catch(err => {
+        alert("傳送失敗：" + err.message);
+        document.getElementById("submitBtn").innerText = "✅ 確認送出至系統";
+      });
     }
   </script>
 </body>
