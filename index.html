@@ -102,7 +102,13 @@
       const statusBox = document.getElementById("status-box");
       statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 開始向 GAS 發送請求...</span>";
 
-      fetch(GAS_API_URL + "?action=getMaterials")
+      // 在網址後面加上時間戳記 (t=...) 強制每次都發送全新請求，破解快取
+      const requestUrl = GAS_API_URL + "?action=getMaterials&t=" + new Date().getTime();
+      
+      fetch(requestUrl, {
+        method: 'GET',
+        redirect: 'follow' // 強制瀏覽器跟隨 GAS 的 302 轉址
+      })
         .then(response => {
           // 印出 HTTP 狀態碼
           statusBox.innerHTML += `<br><span style='font-size:12px;color:gray;'>📥 收到 GAS 回應，狀態碼: ${response.status}</span>`;
