@@ -100,37 +100,61 @@
     // ==========================================
     function fetchMaterials() {
       const statusBox = document.getElementById("status-box");
-      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 向雲端索取最新清單...</span>";
+      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 直連 Google 試算表抓取資料...</span>";
 
-      // 回歸最直接的 GAS API 網址 (加上時間戳記破解快取)
-      const requestUrl = GAS_API_URL + "?action=getMaterials&t=" + new Date().getTime();
+      // 你的試算表 ID 與工作表名稱
+      const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
+      const SHEET_NAME = encodeURIComponent('材料清單');
+      
+      // 使用 Google 官方 GViz API，直接取得 JSON 資料 (無 302 轉址，零 CORS 阻擋)
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
 
-      fetch(requestUrl, {
-        method: 'GET',
-        redirect: 'follow', // 跟隨 GAS 轉址
-        credentials: 'omit' // 🌟 終極殺手鐧：宣告不夾帶追蹤憑證，完美避開 iOS 的 ITP 阻擋！
-      })
-      .then(response => {
-        if (!response.ok) throw new Error(`連線錯誤: ${response.status}`);
-        return response.text(); // 先轉成純文字
-      })
-      .then(text => {
-        const data = JSON.parse(text); // 解析為 JSON
-        
-        if (data.error) {
-          throw new Error("GAS 回報錯誤: " + data.error);
-        }
-        
-        // 成功寫入資料並渲染選單
-        materialsData = data;
-        statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ 資料載入成功！</span>";
-        populateCategories();
-      })
-      .catch(err => {
-        console.error("讀取失敗", err);
-        document.getElementById("mainCategory").innerHTML = '<option value="">❌ 載入失敗</option>';
-        statusBox.innerHTML += `<br><span style='font-size:12px;color:red;'>❌ ${err.message}</span>`;
-      });
+      fetch(gvizUrl)
+        .then(response => {
+          if (!response.ok) throw new Error(`試算表連線失敗， HTTP 狀態: ${response.status}`);
+          return response.text();
+        })
+        .then(text => {
+          // 解析 GViz 回傳的 JSONP 格式
+          const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+          if (!match || !match[1]) {
+            throw new Error("資料格式解析失敗，請確認試算表已開啟『知道連結者可檢視』權限。");
+          }
+
+          const rawData = JSON.parse(match[1]);
+          const rows = rawData.table.rows;
+
+          // 重新組裝成 materialsData 物件 (完全對應原本的資料結構)
+          materialsData = {};
+
+          rows.forEach(row => {
+            if (!row.c) return;
+            
+            // A欄: 大類別 (index 0), B欄: 頻率 (index 1), C欄: 型號 (index 2)
+            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "";
+            const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
+            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim() : "";
+
+            if (!cat || !model || cat === "大類別") return; // 略過空白或表頭列
+
+            if (cat === "單體") {
+              if (!materialsData[cat]) materialsData[cat] = {};
+              if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
+              materialsData[cat][freq].push(model);
+            } else {
+              if (!materialsData[cat]) materialsData[cat] = [];
+              materialsData[cat].push(model);
+            }
+          });
+
+          statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ 材料清單載入成功！</span>";
+          populateCategories(); // 建立下拉選單
+        })
+        .catch(err => {
+          console.error("讀取失敗:", err);
+          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 載入失敗</option>';
+          statusBox.innerHTML += `<br><span style='font-size:12px;color:red;'>❌ ${err.message}</span>`;
+        });
     }
 
     function populateCategories() {
