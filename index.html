@@ -100,35 +100,44 @@
     // ==========================================
     function fetchMaterials() {
       const statusBox = document.getElementById("status-box");
-      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 啟動 JSONP 安全連線...</span>";
+      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 啟動終極代理連線...</span>";
 
-      // 1. 建立全域的 Callback 函式來接收 GAS 傳回的資料
-      window.handleGasData = function(data) {
-        if (data.error) {
-          console.error("後端回報錯誤:", data.error);
-          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 發生錯誤</option>';
-          statusBox.innerHTML += `<br><span style='font-size:12px;color:red;'>❌ ${data.error}</span>`;
-          return;
-        }
-        
-        materialsData = data; // 存入資料
-        statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ 資料載入成功！</span>";
-        populateCategories(); // 建立大類別選單
-      };
-
-      // 2. 透過 <script> 標籤載入資料，完美繞過 fetch 的 CORS 與 ITP 阻擋
-      const script = document.createElement("script");
-      // 網址加上 callback=handleGasData 告訴 GAS 要用這個函式包裝資料
-      const requestUrl = GAS_API_URL + "?action=getMaterials&callback=handleGasData&t=" + new Date().getTime();
+      // 1. 原本的 GAS API 網址
+      const targetUrl = GAS_API_URL + "?action=getMaterials&t=" + new Date().getTime();
       
-      script.src = requestUrl;
-      
-      script.onerror = function() {
-         document.getElementById("mainCategory").innerHTML = '<option value="">❌ 網路連線阻擋</option>';
-         statusBox.innerHTML += "<br><span style='font-size:12px;color:red;'>❌ JSONP 腳本載入失敗</span>";
-      };
+      // 2. 🌟 終極武器：使用 AllOrigins 代理伺服器繞過 Apple 轉址阻擋
+      // 這會讓請求變成一條直線，不會觸發 iOS 的跨網域追蹤警報
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
 
-      document.body.appendChild(script);
+      fetch(proxyUrl)
+        .then(response => {
+          if (!response.ok) throw new Error(`代理伺服器連線錯誤: ${response.status}`);
+          return response.text(); // 先轉成純文字
+        })
+        .then(text => {
+          // 3. 防呆機制：不管 GAS 回傳的是上一版的 JSONP 格式，還是純 JSON，都能完美解析
+          let cleanJsonStr = text;
+          if (text.startsWith("handleGasData(")) {
+             // 剔除 JSONP 的外掛字元，還原成純 JSON
+             cleanJsonStr = text.substring(14, text.length - 2);
+          }
+          
+          const data = JSON.parse(cleanJsonStr);
+          
+          if (data.error) {
+            throw new Error("GAS 回報錯誤: " + data.error);
+          }
+          
+          // 4. 成功寫入資料並渲染選單
+          materialsData = data;
+          statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ 資料載入成功！</span>";
+          populateCategories();
+        })
+        .catch(err => {
+          console.error("讀取失敗", err);
+          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 載入失敗</option>';
+          statusBox.innerHTML += `<br><span style='font-size:12px;color:red;'>❌ ${err.message}</span>`;
+        });
     }
 
     function populateCategories() {
