@@ -132,13 +132,34 @@
       modelSelect.innerHTML = '<option value="">-- 請選擇型號 --</option>';
       
       if (category && materialsData[category]) {
-        // 根據選擇的大類別，填入對應的型號
-        materialsData[category].forEach(model => {
-          let opt = document.createElement("option");
-          opt.value = model;
-          opt.textContent = model;
-          modelSelect.appendChild(opt);
-        });
+        const categoryData = materialsData[category];
+        
+        // 判斷：如果是陣列 (代表是一般天線)
+        if (Array.isArray(categoryData)) {
+          categoryData.forEach(model => {
+            let opt = document.createElement("option");
+            opt.value = model;
+            opt.textContent = model;
+            modelSelect.appendChild(opt);
+          });
+        } 
+        // 判斷：如果是物件 (代表是「單體」，裡面包含了頻率分類)
+        else {
+          for (const freq in categoryData) {
+            // 建立一個不可選的標籤群組，用來顯示頻率
+            let group = document.createElement("optgroup");
+            group.label = `【頻率: ${freq}】`;
+            
+            // 將該頻率下的所有型號加入選單
+            categoryData[freq].forEach(model => {
+              let opt = document.createElement("option");
+              opt.value = model;
+              opt.textContent = model;
+              group.appendChild(opt);
+            });
+            modelSelect.appendChild(group);
+          }
+        }
       }
     }
 
