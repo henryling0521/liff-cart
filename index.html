@@ -99,16 +99,42 @@
     // 2. 抓取與連動下拉選單 (核心邏輯)
     // ==========================================
     function fetchMaterials() {
-      // 向 GAS 發送帶有 action=getMaterials 的請求
+      const statusBox = document.getElementById("status-box");
+      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 開始向 GAS 發送請求...</span>";
+
       fetch(GAS_API_URL + "?action=getMaterials")
-        .then(response => response.json())
-        .then(data => {
-          materialsData = data; // 將 JSON 存入變數
-          populateCategories(); // 建立大類別選單
+        .then(response => {
+          // 印出 HTTP 狀態碼
+          statusBox.innerHTML += `<br><span style='font-size:12px;color:gray;'>📥 收到 GAS 回應，狀態碼: ${response.status}</span>`;
+          
+          if (!response.ok) {
+            throw new Error(`HTTP 連線錯誤! 狀態碼: ${response.status}`);
+          }
+          // ⚠️ 關鍵除錯：先不要直接轉 JSON，先轉成純文字看內容
+          return response.text(); 
+        })
+        .then(text => {
+          try {
+            // 嘗試將純文字解析為 JSON 物件
+            materialsData = JSON.parse(text);
+            statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ JSON 資料解析成功！</span>";
+            populateCategories(); // 建立大類別選單
+          } catch (e) {
+            // 解析失敗時，把收到的「非 JSON 內容」印在畫面上
+            console.error("JSON 解析失敗", e);
+            const preview = text.substring(0, 150).replace(/</g, "&lt;").replace(/>/g, "&gt;"); // 擷取前150字並防止HTML渲染
+            throw new Error(`解析 JSON 失敗。<br><b>後端實際回傳的內容是：</b><br><span style='color:blue;'>${preview}...</span>`);
+          }
         })
         .catch(err => {
-          console.error("讀取資料失敗", err);
-          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 資料載入失敗，請重整</option>';
+          console.error("讀取資料詳細錯誤", err);
+          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 資料載入失敗</option>';
+          
+          // 在畫面上建立一個紅色的錯誤日誌區塊
+          const errorDiv = document.createElement("div");
+          errorDiv.style.cssText = "color: red; font-size: 13px; background: #fee; padding: 12px; margin-top: 15px; text-align: left; word-break: break-all; border-radius: 5px; border: 1px solid #fcc;";
+          errorDiv.innerHTML = `<strong>⚠️ 抓取資料錯誤詳細紀錄：</strong><br>${err.message}`;
+          document.querySelector(".container").appendChild(errorDiv);
         });
     }
 
