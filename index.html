@@ -21,7 +21,7 @@
 
     /* 橫向滑動的大類別導航 */
     .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 55px; z-index: 99; }
-    .category-scroll::-webkit-scrollbar { display: none; } /* 隱藏滾動條 */
+    .category-scroll::-webkit-scrollbar { display: none; } 
     .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
     .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
 
@@ -31,11 +31,12 @@
     .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
     
-    /* 數量加減控制器 */
-    .qty-control { display: flex; align-items: center; background: #f0f0f0; border-radius: 20px; overflow: hidden; }
-    .qty-btn { width: 32px; height: 32px; border: none; background: #f0f0f0; font-size: 18px; font-weight: bold; color: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    /* 🌟 升級版：大按鈕與輸入框設計 */
+    .qty-control { display: flex; align-items: center; background: #f0f0f0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+    .qty-btn { width: 42px; height: 42px; border: none; background: #f0f0f0; font-size: 24px; color: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.1s; padding-bottom: 2px; }
     .qty-btn:active { background: #e0e0e0; }
-    .qty-display { width: 30px; text-align: center; font-size: 15px; font-weight: bold; }
+    .qty-input { width: 50px; height: 42px; text-align: center; font-size: 16px; font-weight: bold; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd; background: #fff; outline: none; -moz-appearance: textfield; padding: 0; color: #333; }
+    .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
     /* 底部懸浮購物車 */
     .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 1000; }
@@ -45,12 +46,12 @@
 
     /* 購物車確認視窗 (Modal) */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
-    .modal-content { background: #fff; width: 100%; max-height: 80vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
+    .modal-content { background: #fff; width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
     .modal-title { font-size: 18px; font-weight: bold; }
     .close-btn { background: none; border: none; font-size: 24px; color: #888; }
-    .modal-body { overflow-y: auto; flex: 1; margin-bottom: 15px; }
+    .modal-body { overflow-y: auto; flex: 1; margin-bottom: 15px; padding-right: 5px;}
     .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
     .submit-btn { background: var(--primary); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
 
@@ -66,9 +67,7 @@
   </header>
 
   <!-- 橫向類別導航 -->
-  <div class="category-scroll" id="category-tabs">
-    <!-- 類別按鈕會動態生成於此 -->
-  </div>
+  <div class="category-scroll" id="category-tabs"></div>
 
   <!-- 物料列表區 -->
   <div class="item-container" id="item-list">
@@ -90,9 +89,7 @@
         <div class="modal-title">📋 已選清單確認</div>
         <button class="close-btn" onclick="closeCart()">×</button>
       </div>
-      <div class="modal-body" id="cart-items">
-        <!-- 購物車內容 -->
-      </div>
+      <div class="modal-body" id="cart-items"></div>
       <button class="submit-btn" id="submit-btn" onclick="submitToLine()">✅ 確認送出給系統</button>
     </div>
   </div>
@@ -103,13 +100,10 @@
     const SHEET_NAME = encodeURIComponent('材料清單');
     
     let isLiffInit = false;
-    let materialsData = {}; // 雲端材料庫
-    let cart = {}; // 購物車紀錄 { "型號名稱": 數量 }
-    let currentCategory = ""; // 當前顯示的類別
+    let materialsData = {}; 
+    let cart = {}; 
+    let currentCategory = ""; 
 
-    // ==========================================
-    // 1. 初始化環境與抓取資料 (保留成功的 GViz API)
-    // ==========================================
     document.addEventListener("DOMContentLoaded", () => {
       fetchMaterials();
 
@@ -164,9 +158,6 @@
         });
     }
 
-    // ==========================================
-    // 2. 渲染 UI: 橫向分類與物料卡片
-    // ==========================================
     function renderCategoryTabs() {
       const tabsContainer = document.getElementById("category-tabs");
       tabsContainer.innerHTML = "";
@@ -181,19 +172,14 @@
         tabsContainer.appendChild(btn);
       }
       
-      // 預設顯示第一個分類的物料
       renderItems(currentCategory);
     }
 
     function selectCategory(category, btnElement) {
       currentCategory = category;
-      // 移除所有 active 樣式，幫點擊的按鈕加上 active
       document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
       btnElement.classList.add('active');
-      
-      // 將點擊的分類滑動到畫面中間
       btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-      
       renderItems(category);
     }
 
@@ -205,21 +191,19 @@
       if (Array.isArray(categoryData)) {
         categoryData.forEach(model => listContainer.appendChild(createItemCard(model)));
       } else {
-        // 處理「單體」這種帶有頻率層級的結構
         for (const freq in categoryData) {
           let header = document.createElement("div");
           header.className = "freq-header";
           header.innerText = `【頻率: ${freq}】`;
           listContainer.appendChild(header);
-          
           categoryData[freq].forEach(model => listContainer.appendChild(createItemCard(model)));
         }
       }
     }
 
-    // 建立獨立的物料卡片
+    // 🌟 升級版：使用 encodeURIComponent 確保引號不出錯，並加入 input 手動輸入功能
     function createItemCard(model) {
-      const safeModel = model.replace(/"/g, '&quot;'); // 防禦 HTML 雙引號破壞
+      const encodedModel = encodeURIComponent(model);
       const currentQty = cart[model] || 0;
       
       let card = document.createElement("div");
@@ -227,35 +211,71 @@
       card.innerHTML = `
         <div class="item-name">${model}</div>
         <div class="qty-control">
-          <button class="qty-btn" onclick="updateCart('${safeModel}', -1)">-</button>
-          <div class="qty-display" id="qty-${safeModel}">${currentQty}</div>
-          <button class="qty-btn" onclick="updateCart('${safeModel}', 1)">+</button>
+          <button class="qty-btn" onclick="updateCart('${encodedModel}', -1)">-</button>
+          <input type="number" class="qty-input" id="qty-${encodedModel}" value="${currentQty}" min="0" onchange="manualUpdateCart('${encodedModel}', this.value)" onfocus="this.select()">
+          <button class="qty-btn" onclick="updateCart('${encodedModel}', 1)">+</button>
         </div>
       `;
       return card;
     }
 
     // ==========================================
-    // 3. 購物車邏輯與 Modal 彈窗
+    // 3. 購物車邏輯 (按鈕加減 & 手動輸入)
     // ==========================================
-    function updateCart(model, change) {
-      // 還原可能被 encode 的引號
-      model = model.replace(/&quot;/g, '"');
-      
+    
+    // 透過按鈕增減
+    function updateCart(encodedModel, change) {
+      const model = decodeURIComponent(encodedModel);
       if (!cart[model]) cart[model] = 0;
       cart[model] += change;
+      if (cart[model] < 0) cart[model] = 0;
       
-      if (cart[model] < 0) cart[model] = 0; // 最低為 0
-      if (cart[model] === 0) delete cart[model]; // 0 的話直接從購物車剔除
+      syncCartUI(model, encodedModel);
+    }
+
+    // 透過輸入框手動更改
+    function manualUpdateCart(encodedModel, value) {
+      const model = decodeURIComponent(encodedModel);
+      let num = parseInt(value, 10);
+      if (isNaN(num) || num < 0) num = 0; // 防呆：如果輸入負數或亂打，自動歸零
+      cart[model] = num;
       
-      // 更新畫面上的數字
-      const displayElem = document.getElementById(`qty-${model.replace(/"/g, '&quot;')}`);
-      if (displayElem) displayElem.innerText = cart[model] || 0;
+      syncCartUI(model, encodedModel);
+    }
+
+    // Modal 裡的增減 (減到零會重整清單)
+    function updateCartInModal(encodedModel, change) {
+      updateCart(encodedModel, change);
+      const model = decodeURIComponent(encodedModel);
+      if (!cart[model]) openCart();
+    }
+
+    // Modal 裡的手動更改 (改到零會重整清單)
+    function manualUpdateCartInModal(encodedModel, value) {
+      manualUpdateCart(encodedModel, value);
+      const model = decodeURIComponent(encodedModel);
+      if (!cart[model]) openCart();
+    }
+
+    // 同步畫面上的所有數字
+    function syncCartUI(model, encodedModel) {
+      if (cart[model] === 0) delete cart[model];
       
-      // 更新底部徽章總數 (計算有幾種物料)
+      let qty = cart[model] || 0;
+
+      // 更新主畫面的輸入框
+      const displayElem = document.getElementById(`qty-${encodedModel}`);
+      if (displayElem) displayElem.value = qty;
+
+      // 更新購物車清單的輸入框
+      const modalQtyElem = document.getElementById(`modal-qty-${encodedModel}`);
+      if (modalQtyElem) modalQtyElem.value = qty;
+      
+      // 更新底部徽章總數
       document.getElementById("cart-badge").innerText = Object.keys(cart).length;
     }
 
+    // 打開購物車彈窗
     function openCart() {
       const itemsContainer = document.getElementById("cart-items");
       itemsContainer.innerHTML = "";
@@ -263,14 +283,14 @@
 
       for (const model in cart) {
         hasItems = true;
-        let safeModel = model.replace(/"/g, '&quot;');
+        const encodedModel = encodeURIComponent(model);
         itemsContainer.innerHTML += `
           <div class="cart-item">
-            <span style="flex:1; padding-right:10px;">${model}</span>
-            <div class="qty-control" style="transform: scale(0.9);">
-              <button class="qty-btn" onclick="updateCartInModal('${safeModel}', -1)">-</button>
-              <div class="qty-display" id="modal-qty-${safeModel}">${cart[model]}</div>
-              <button class="qty-btn" onclick="updateCartInModal('${safeModel}', 1)">+</button>
+            <span style="flex:1; padding-right:10px; align-self:center;">${model}</span>
+            <div class="qty-control" style="transform: scale(0.95);">
+              <button class="qty-btn" onclick="updateCartInModal('${encodedModel}', -1)">-</button>
+              <input type="number" class="qty-input" id="modal-qty-${encodedModel}" value="${cart[model]}" min="0" onchange="manualUpdateCartInModal('${encodedModel}', this.value)" onfocus="this.select()">
+              <button class="qty-btn" onclick="updateCartInModal('${encodedModel}', 1)">+</button>
             </div>
           </div>
         `;
@@ -290,20 +310,7 @@
 
     function closeCart() {
       document.getElementById("cart-modal").style.display = "none";
-      renderItems(currentCategory); // 關閉時刷新底層卡片的數字
-    }
-
-    function updateCartInModal(model, change) {
-      updateCart(model, change);
-      model = model.replace(/&quot;/g, '"');
-      let safeModel = model.replace(/"/g, '&quot;');
-      
-      const modalQtyElem = document.getElementById(`modal-qty-${safeModel}`);
-      if (modalQtyElem) {
-        modalQtyElem.innerText = cart[model] || 0;
-        // 如果減到 0，重新渲染 Modal 清單
-        if (!cart[model]) openCart();
-      }
+      renderItems(currentCategory); // 關閉時重新渲染，確保所有數字是最新的
     }
 
     // ==========================================
