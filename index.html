@@ -2,140 +2,150 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批次領退料購物車</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>批次領退料系統</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background-color: #f9f9f9; }
-    .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #333; margin-top: 0; }
-    label { font-weight: bold; margin-top: 10px; display: block; color: #555; }
-    select, input { padding: 12px; margin: 5px 0 15px 0; width: 100%; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    button { padding: 12px; font-size: 16px; width: 100%; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-    .add-btn { background-color: #007bff; color: white; margin-bottom: 20px; }
-    .submit-btn { background-color: #06C755; color: white; margin-top: 10px; }
-    ul { list-style-type: none; padding: 0; margin: 0; }
-    li { background: #f4f4f4; margin: 8px 0; padding: 12px; display: flex; justify-content: space-between; border-radius: 5px; border-left: 4px solid #007bff; }
-    .delete-btn { color: red; font-size: 14px; cursor: pointer; border: none; background: none; padding: 0; width: auto; font-weight: normal; }
-    #status-box { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-weight: bold; background: #eef; color: #333; }
+    :root {
+      --primary: #06C755; /* LINE Green */
+      --bg: #f5f6f8;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+      --text-muted: #888888;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg); color: var(--text-main); padding-bottom: 80px; }
+    
+    /* 頂部狀態列 */
+    header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+    #status-box { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-weight: normal; }
+
+    /* 橫向滑動的大類別導航 */
+    .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 55px; z-index: 99; }
+    .category-scroll::-webkit-scrollbar { display: none; } /* 隱藏滾動條 */
+    .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
+    .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
+
+    /* 物料列表區 */
+    .item-container { padding: 15px; }
+    .freq-header { font-size: 13px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-left: 4px solid var(--primary); padding-left: 8px; }
+    .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
+    
+    /* 數量加減控制器 */
+    .qty-control { display: flex; align-items: center; background: #f0f0f0; border-radius: 20px; overflow: hidden; }
+    .qty-btn { width: 32px; height: 32px; border: none; background: #f0f0f0; font-size: 18px; font-weight: bold; color: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    .qty-btn:active { background: #e0e0e0; }
+    .qty-display { width: 30px; text-align: center; font-size: 15px; font-weight: bold; }
+
+    /* 底部懸浮購物車 */
+    .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 1000; }
+    .cart-info { font-size: 16px; font-weight: bold; display: flex; align-items: center; }
+    .cart-badge { background: #ff3b30; color: white; border-radius: 50%; padding: 2px 8px; font-size: 14px; margin-left: 8px; }
+    .view-cart-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; }
+
+    /* 購物車確認視窗 (Modal) */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
+    .modal-content { background: #fff; width: 100%; max-height: 80vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+    .modal-title { font-size: 18px; font-weight: bold; }
+    .close-btn { background: none; border: none; font-size: 24px; color: #888; }
+    .modal-body { overflow-y: auto; flex: 1; margin-bottom: 15px; }
+    .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
+    .submit-btn { background: var(--primary); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
+
+    /* 載入中動畫 */
+    .loader { text-align: center; padding: 40px 20px; color: #888; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🛒 批次領/退料清單</h2>
-    
-    <!-- 狀態顯示區與強制授權按鈕 -->
+
+  <header>
+    📦 領退料系統
     <div id="status-box">LIFF 系統初始化中...</div>
-    
-    <label>📦 大類別：</label>
-    <select id="mainCategory" onchange="updateModels()">
-      <option value="">🔄 正在從系統載入資料...</option>
-    </select>
-    
-    <label>🏷️ 物料型號：</label>
-    <select id="itemModel">
-      <option value="">請先選擇大類別</option>
-    </select>
-    
-    <label>🔢 數量：</label>
-    <input type="number" id="itemQty" placeholder="請輸入數量" min="1">
-    
-    <button class="add-btn" onclick="addToList()">➕ 加入清單</button>
+  </header>
 
-    <ul id="cartList"></ul>
+  <!-- 橫向類別導航 -->
+  <div class="category-scroll" id="category-tabs">
+    <!-- 類別按鈕會動態生成於此 -->
+  </div>
 
-    <button class="submit-btn" id="submitBtn" onclick="submitToLine()" disabled>✅ 確認送出至系統</button>
+  <!-- 物料列表區 -->
+  <div class="item-container" id="item-list">
+    <div class="loader">⏳ 正在載入雲端材料清單...</div>
+  </div>
+
+  <!-- 底部懸浮購物車 -->
+  <div class="bottom-bar">
+    <div class="cart-info">
+      🛒 已選物料 <span class="cart-badge" id="cart-badge">0</span>
+    </div>
+    <button class="view-cart-btn" onclick="openCart()">查看清單</button>
+  </div>
+
+  <!-- 購物車確認視窗 -->
+  <div class="modal-overlay" id="cart-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">📋 已選清單確認</div>
+        <button class="close-btn" onclick="closeCart()">×</button>
+      </div>
+      <div class="modal-body" id="cart-items">
+        <!-- 購物車內容 -->
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitToLine()">✅ 確認送出給系統</button>
+    </div>
   </div>
 
   <script>
-    // ==========================================
-    // ⚠️ 基礎設定區 (請替換為你的真實網址與 ID)
-    // ==========================================
     const LIFF_ID = "2011068238-PFTKKAEP"; 
-    // 請將下方替換成你剛剛發佈的 GAS「網頁應用程式網址」
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwqy_q6_pqmlZHrilDaoKd_xlVVeKpV85jfCYYR5APXe483tXAbGZmJqrrcqR_OJ0wX/exec"; 
+    const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
+    const SHEET_NAME = encodeURIComponent('材料清單');
     
     let isLiffInit = false;
-    let cart = [];
-    let materialsData = {}; // 用來存放從雲端抓下來的分類資料
+    let materialsData = {}; // 雲端材料庫
+    let cart = {}; // 購物車紀錄 { "型號名稱": 數量 }
+    let currentCategory = ""; // 當前顯示的類別
 
     // ==========================================
-    // 1. 系統載入與 LIFF 初始化
+    // 1. 初始化環境與抓取資料 (保留成功的 GViz API)
     // ==========================================
     document.addEventListener("DOMContentLoaded", () => {
-      // 發起非同步抓取雲端表單資料
       fetchMaterials();
 
-      // 啟動 LIFF
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("逾時")), 10000));
       Promise.race([ liff.init({ liffId: LIFF_ID }), timeoutPromise ])
       .then(() => {
         isLiffInit = true;
         if (!liff.isInClient() && !liff.isLoggedIn()) {
-          showAuthButton(); // 未登入顯示強制跳轉按鈕
+          document.getElementById("status-box").innerHTML = `⚠️ <span style="color:red;" onclick="window.top.location.href='https://liff.line.me/${LIFF_ID}'">點此進行 LINE 授權</span>`;
         } else {
-          document.getElementById("status-box").innerHTML = "✅ 系統就緒";
-          document.getElementById("status-box").style.background = "#e6ffe6";
+          document.getElementById("status-box").innerHTML = "✅ 系統連線就緒";
         }
-      })
-      .catch((err) => {
-        if(isLiffInit) return;
-        showAuthButton(); // 卡死時顯示強制跳轉按鈕
+      }).catch(() => {
+        document.getElementById("status-box").innerHTML = `⚠️ <span style="color:red;" onclick="window.top.location.href='https://liff.line.me/${LIFF_ID}'">點此進行 LINE 授權</span>`;
       });
     });
 
-    function showAuthButton() {
-      document.getElementById("status-box").innerHTML = `
-        <span style="color: red;">⚠️ 尚未授權或環境卡死</span><br>
-        <button onclick="forceLogin()" style="background: #00B900; color: white; margin-top: 10px;">🛡️ 點此進行 LINE 授權</button>
-      `;
-    }
-
-    function forceLogin() {
-      window.top.location.href = "https://liff.line.me/" + LIFF_ID;
-    }
-
-    // ==========================================
-    // 2. 抓取與連動下拉選單 (核心邏輯)
-    // ==========================================
     function fetchMaterials() {
-      const statusBox = document.getElementById("status-box");
-      statusBox.innerHTML += "<br><span style='font-size:12px;color:gray;'>⏳ 直連 Google 試算表抓取資料...</span>";
-
-      // 你的試算表 ID 與工作表名稱
-      const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
-      const SHEET_NAME = encodeURIComponent('材料清單');
-      
-      // 使用 Google 官方 GViz API，直接取得 JSON 資料 (無 302 轉址，零 CORS 阻擋)
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
 
       fetch(gvizUrl)
-        .then(response => {
-          if (!response.ok) throw new Error(`試算表連線失敗， HTTP 狀態: ${response.status}`);
-          return response.text();
-        })
+        .then(response => response.text())
         .then(text => {
-          // 解析 GViz 回傳的 JSONP 格式
           const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-          if (!match || !match[1]) {
-            throw new Error("資料格式解析失敗，請確認試算表已開啟『知道連結者可檢視』權限。");
-          }
+          if (!match || !match[1]) throw new Error("資料格式解析失敗");
 
           const rawData = JSON.parse(match[1]);
-          const rows = rawData.table.rows;
-
-          // 重新組裝成 materialsData 物件 (完全對應原本的資料結構)
           materialsData = {};
 
-          rows.forEach(row => {
+          rawData.table.rows.forEach(row => {
             if (!row.c) return;
-            
-            // A欄: 大類別 (index 0), B欄: 頻率 (index 1), C欄: 型號 (index 2)
             const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "";
             const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
             const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim() : "";
 
-            if (!cat || !model || cat === "大類別") return; // 略過空白或表頭列
+            if (!cat || !model || cat === "大類別") return; 
 
             if (cat === "單體") {
               if (!materialsData[cat]) materialsData[cat] = {};
@@ -147,102 +157,153 @@
             }
           });
 
-          statusBox.innerHTML += "<br><span style='font-size:12px;color:green;'>✅ 材料清單載入成功！</span>";
-          populateCategories(); // 建立下拉選單
+          renderCategoryTabs();
         })
         .catch(err => {
-          console.error("讀取失敗:", err);
-          document.getElementById("mainCategory").innerHTML = '<option value="">❌ 載入失敗</option>';
-          statusBox.innerHTML += `<br><span style='font-size:12px;color:red;'>❌ ${err.message}</span>`;
+          document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料載入失敗: ${err.message}</div>`;
         });
     }
 
-    function populateCategories() {
-      const categorySelect = document.getElementById("mainCategory");
-      categorySelect.innerHTML = '<option value="">-- 請選擇大類別 --</option>';
+    // ==========================================
+    // 2. 渲染 UI: 橫向分類與物料卡片
+    // ==========================================
+    function renderCategoryTabs() {
+      const tabsContainer = document.getElementById("category-tabs");
+      tabsContainer.innerHTML = "";
       
-      // 讀取物件中的所有鍵值 (大類別名稱)
+      let isFirst = true;
       for (const category in materialsData) {
-        let opt = document.createElement("option");
-        opt.value = category;
-        opt.textContent = category;
-        categorySelect.appendChild(opt);
+        let btn = document.createElement("button");
+        btn.className = "cat-tab";
+        if (isFirst) { btn.classList.add("active"); currentCategory = category; isFirst = false; }
+        btn.innerText = category;
+        btn.onclick = () => selectCategory(category, btn);
+        tabsContainer.appendChild(btn);
       }
+      
+      // 預設顯示第一個分類的物料
+      renderItems(currentCategory);
     }
 
-    function updateModels() {
-      const category = document.getElementById("mainCategory").value;
-      const modelSelect = document.getElementById("itemModel");
+    function selectCategory(category, btnElement) {
+      currentCategory = category;
+      // 移除所有 active 樣式，幫點擊的按鈕加上 active
+      document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
       
-      modelSelect.innerHTML = '<option value="">-- 請選擇型號 --</option>';
+      // 將點擊的分類滑動到畫面中間
+      btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       
-      if (category && materialsData[category]) {
-        const categoryData = materialsData[category];
-        
-        // 判斷：如果是陣列 (代表是一般天線)
-        if (Array.isArray(categoryData)) {
-          categoryData.forEach(model => {
-            let opt = document.createElement("option");
-            opt.value = model;
-            opt.textContent = model;
-            modelSelect.appendChild(opt);
-          });
-        } 
-        // 判斷：如果是物件 (代表是「單體」，裡面包含了頻率分類)
-        else {
-          for (const freq in categoryData) {
-            // 建立一個不可選的標籤群組，用來顯示頻率
-            let group = document.createElement("optgroup");
-            group.label = `【頻率: ${freq}】`;
-            
-            // 將該頻率下的所有型號加入選單
-            categoryData[freq].forEach(model => {
-              let opt = document.createElement("option");
-              opt.value = model;
-              opt.textContent = model;
-              group.appendChild(opt);
-            });
-            modelSelect.appendChild(group);
-          }
+      renderItems(category);
+    }
+
+    function renderItems(category) {
+      const listContainer = document.getElementById("item-list");
+      listContainer.innerHTML = "";
+      const categoryData = materialsData[category];
+
+      if (Array.isArray(categoryData)) {
+        categoryData.forEach(model => listContainer.appendChild(createItemCard(model)));
+      } else {
+        // 處理「單體」這種帶有頻率層級的結構
+        for (const freq in categoryData) {
+          let header = document.createElement("div");
+          header.className = "freq-header";
+          header.innerText = `【頻率: ${freq}】`;
+          listContainer.appendChild(header);
+          
+          categoryData[freq].forEach(model => listContainer.appendChild(createItemCard(model)));
         }
       }
     }
 
-    // ==========================================
-    // 3. 購物車邏輯 (加入清單與刪除)
-    // ==========================================
-    function addToList() {
-      let model = document.getElementById("itemModel").value;
-      let qty = document.getElementById("itemQty").value.trim();
+    // 建立獨立的物料卡片
+    function createItemCard(model) {
+      const safeModel = model.replace(/"/g, '&quot;'); // 防禦 HTML 雙引號破壞
+      const currentQty = cart[model] || 0;
       
-      if(!model) return alert("請選擇物料型號！");
-      if(!qty || qty <= 0) return alert("請輸入正確的數量！");
-
-      // 組合格式："型號 空格 數量"，完美對應你後端 split(" ") 的邏輯
-      cart.push({ name: model, qty: qty, textStr: `${model} ${qty}` }); 
-      
-      updateCartView();
-      document.getElementById("itemQty").value = ""; // 清空數量
+      let card = document.createElement("div");
+      card.className = "item-card";
+      card.innerHTML = `
+        <div class="item-name">${model}</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="updateCart('${safeModel}', -1)">-</button>
+          <div class="qty-display" id="qty-${safeModel}">${currentQty}</div>
+          <button class="qty-btn" onclick="updateCart('${safeModel}', 1)">+</button>
+        </div>
+      `;
+      return card;
     }
 
-    function removeFromList(index) {
-      cart.splice(index, 1);
-      updateCartView();
+    // ==========================================
+    // 3. 購物車邏輯與 Modal 彈窗
+    // ==========================================
+    function updateCart(model, change) {
+      // 還原可能被 encode 的引號
+      model = model.replace(/&quot;/g, '"');
+      
+      if (!cart[model]) cart[model] = 0;
+      cart[model] += change;
+      
+      if (cart[model] < 0) cart[model] = 0; // 最低為 0
+      if (cart[model] === 0) delete cart[model]; // 0 的話直接從購物車剔除
+      
+      // 更新畫面上的數字
+      const displayElem = document.getElementById(`qty-${model.replace(/"/g, '&quot;')}`);
+      if (displayElem) displayElem.innerText = cart[model] || 0;
+      
+      // 更新底部徽章總數 (計算有幾種物料)
+      document.getElementById("cart-badge").innerText = Object.keys(cart).length;
     }
 
-    function updateCartView() {
-      let listHtml = "";
-      cart.forEach((item, index) => {
-        listHtml += `
-          <li>
-            <span>${item.name} <strong style="color:#007bff;">(${item.qty} 個)</strong></span>
-            <span class="delete-btn" onclick="removeFromList(${index})">❌移除</span>
-          </li>`;
-      });
-      document.getElementById("cartList").innerHTML = listHtml;
+    function openCart() {
+      const itemsContainer = document.getElementById("cart-items");
+      itemsContainer.innerHTML = "";
+      let hasItems = false;
+
+      for (const model in cart) {
+        hasItems = true;
+        let safeModel = model.replace(/"/g, '&quot;');
+        itemsContainer.innerHTML += `
+          <div class="cart-item">
+            <span style="flex:1; padding-right:10px;">${model}</span>
+            <div class="qty-control" style="transform: scale(0.9);">
+              <button class="qty-btn" onclick="updateCartInModal('${safeModel}', -1)">-</button>
+              <div class="qty-display" id="modal-qty-${safeModel}">${cart[model]}</div>
+              <button class="qty-btn" onclick="updateCartInModal('${safeModel}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      }
+
+      if (!hasItems) {
+        itemsContainer.innerHTML = "<div style='text-align:center; color:#888; padding: 20px;'>購物車目前是空的喔！</div>";
+        document.getElementById("submit-btn").style.background = "#ccc";
+        document.getElementById("submit-btn").disabled = true;
+      } else {
+        document.getElementById("submit-btn").style.background = "#06C755";
+        document.getElementById("submit-btn").disabled = false;
+      }
+
+      document.getElementById("cart-modal").style.display = "flex";
+    }
+
+    function closeCart() {
+      document.getElementById("cart-modal").style.display = "none";
+      renderItems(currentCategory); // 關閉時刷新底層卡片的數字
+    }
+
+    function updateCartInModal(model, change) {
+      updateCart(model, change);
+      model = model.replace(/&quot;/g, '"');
+      let safeModel = model.replace(/"/g, '&quot;');
       
-      // 如果購物車有東西，才啟用送出按鈕
-      document.getElementById("submitBtn").disabled = cart.length === 0;
+      const modalQtyElem = document.getElementById(`modal-qty-${safeModel}`);
+      if (modalQtyElem) {
+        modalQtyElem.innerText = cart[model] || 0;
+        // 如果減到 0，重新渲染 Modal 清單
+        if (!cart[model]) openCart();
+      }
     }
 
     // ==========================================
@@ -250,21 +311,27 @@
     // ==========================================
     function submitToLine() {
       if(!isLiffInit || (!liff.isInClient() && !liff.isLoggedIn())) {
-         return alert("LIFF 尚未就緒或未登入，請先完成授權。");
+         return alert("LIFF 尚未就緒或未登入，請關閉後重新開啟。");
       }
-      if(cart.length === 0) return alert("清單是空的！");
       
-      document.getElementById("submitBtn").innerText = "⏳ 傳送中...";
-      
-      let messageText = cart.map(item => item.textStr).join("\n");
+      let messageLines = [];
+      for (const model in cart) {
+        if (cart[model] > 0) {
+          messageLines.push(`${model} ${cart[model]}`);
+        }
+      }
 
-      liff.sendMessages([
-        { type: 'text', text: messageText }
-      ]).then(() => {
+      if (messageLines.length === 0) return alert("清單是空的！");
+      
+      document.getElementById("submit-btn").innerText = "⏳ 傳送中...";
+      let messageText = messageLines.join("\n");
+
+      liff.sendMessages([{ type: 'text', text: messageText }])
+      .then(() => {
         liff.closeWindow(); 
       }).catch(err => {
         alert("傳送失敗：" + err.message);
-        document.getElementById("submitBtn").innerText = "✅ 確認送出至系統";
+        document.getElementById("submit-btn").innerText = "✅ 確認送出給系統";
       });
     }
   </script>
