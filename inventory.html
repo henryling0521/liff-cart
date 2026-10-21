@@ -53,6 +53,10 @@
     .qty-neg { color: #ff3b30; font-weight: bold; } /* 領料(負數) */
 
     .loader { text-align: center; padding: 40px 20px; color: #888; }
+    
+    .history-row { transition: background-color 0.2s; }
+    .history-row.has-link { cursor: pointer; }
+    .history-row.has-link:active { background-color: #e6f7ff; }
   </style>
 </head>
 <body>
@@ -223,17 +227,14 @@
     function openHistory(encodedModel) {
       const targetModel = decodeURIComponent(encodedModel);
       
-      // 開啟 Modal 並初始化 UI
       document.getElementById("history-modal").style.display = "flex";
       document.getElementById("history-title").innerText = `📦 ${targetModel}`;
       document.getElementById("history-body").innerHTML = "";
       document.getElementById("history-loader").style.display = "block";
       document.getElementById("history-empty").style.display = "none";
 
-      // 使用 GViz 查詢「紀錄」工作表
-      // A:時間, B:包商, C:類型, D:大類別, E:型號, F:數量, G:站台, H:發料人
-      // 🚀 SQL 查詢法：利用 query 參數直接請 Google 篩選出該型號的資料，並依時間倒序排列
-      const queryStr = encodeURIComponent(`select A, B, F, G, H where E = '${targetModel.replace(/'/g, "\\'")}' order by A desc`);
+      // 🚀 關鍵修改：加上抓取 I 欄 (PDF網址)
+      const queryStr = encodeURIComponent(`select A, B, F, G, H, I where E = '${targetModel.replace(/'/g, "\\'")}' order by A desc`);
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('紀錄')}&tq=${queryStr}&t=${new Date().getTime()}`;
 
       fetch(gvizUrl)
@@ -254,27 +255,37 @@
           let tbodyHtml = "";
           rows.forEach(row => {
             if (!row.c) return;
-            // 處理時間格式 (Google GViz 會回傳 Date(2026,2,17,9,25,23) 格式的字串)
-            let dateStr = "";
+            
+            // 🌟 需求 1：只顯示日期 (利用空白分割字串)
+            let dateStr = "未知日期";
             if (row.c[0] && row.c[0].f) {
-                // 如果有格式化好的字串 (如 2026/3/17 上午 9:25:23)
-                dateStr = row.c[0].f.replace(/上午|下午/g, "").substring(5, 16); // 簡化為 3/17 9:25
-            } else {
-                dateStr = "未知時間";
+                dateStr = row.c[0].f.split(" ")[0]; // 切割後只拿 "2026/3/11"
             }
 
             const contractor = row.c[1] && row.c[1].v ? row.c[1].v : "-";
             const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
             const station = row.c[3] && row.c[3].v ? row.c[3].v : "-";
             const staff = row.c[4] && row.c[4].v ? row.c[4].v : "-";
+            
+            // 🌟 需求 2：讀取第 6 個參數 (I 欄) 網址
+            const pdfUrl = row.c[5] && row.c[5].v ? row.c[5].v.toString() : "";
 
-            // 數量樣式：正數(退料)為綠色，負數(領料)為紅色
             let qtyClass = qty > 0 ? "qty-pos" : (qty < 0 ? "qty-neg" : "");
             let qtyDisplay = qty > 0 ? `+${qty}` : qty;
 
+            // 判斷是否有合法的網址，有的話就讓整列變成可點擊，並加上檔案小圖示
+            let rowHtml = "";
+            let pdfIcon = "";
+            if (pdfUrl.startsWith("http")) {
+              rowHtml = `<tr class="history-row has-link" onclick="window.open('${pdfUrl}', '_blank')">`;
+              pdfIcon = ` <span style="font-size:14px;" title="點擊查看領料單">📄</span>`;
+            } else {
+              rowHtml = `<tr class="history-row">`;
+            }
+
             tbodyHtml += `
-              <tr>
-                <td style="font-size:11px; color:#777;">${dateStr}</td>
+              ${rowHtml}
+                <td style="font-size:12px; color:#555;">${dateStr}${pdfIcon}</td>
                 <td>${contractor}</td>
                 <td class="${qtyClass}">${qtyDisplay}</td>
                 <td style="font-size:12px;">${station}</td>
