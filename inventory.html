@@ -133,8 +133,8 @@
 
           rawData.table.rows.forEach(row => {
             if (!row.c) return;
-            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "未分類";
-            const model = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
+            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "未分類";
+            const model = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
             const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
 
             if (!model || cat === "大類別") return; 
@@ -234,7 +234,9 @@
       document.getElementById("history-empty").style.display = "none";
 
       // 🚀 關鍵修改：加上抓取 I 欄 (PDF網址)
-      const queryStr = encodeURIComponent(`select A, B, F, G, H, I where E = '${targetModel.replace(/'/g, "\\'")}' order by A desc`);
+      // 🌟 將目標型號轉大寫，並要求 SQL 將 E 欄 (型號) 轉大寫後再進行比對
+      const safeModel = targetModel.toUpperCase().replace(/'/g, "\\'");
+      const queryStr = encodeURIComponent(`select A, B, F, G, H, I where upper(E) = '${safeModel}' order by A desc`);
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('紀錄')}&tq=${queryStr}&t=${new Date().getTime()}`;
 
       fetch(gvizUrl)
