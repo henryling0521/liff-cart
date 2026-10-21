@@ -224,14 +224,24 @@
     }
 
     // 🌟 升級版：使用 encodeURIComponent 確保引號不出錯，並加入 input 手動輸入功能
-    function createItemCard(model) {
+    function createItemCard(model, categoryName = "") {
       const encodedModel = encodeURIComponent(model);
       const currentQty = cart[model] || 0;
       
       let card = document.createElement("div");
       card.className = "item-card";
+
+      // 🌟 判斷是否為全域搜尋，如果是，就在型號底下多顯示一行「所屬分類」
+      let nameHtml = `<div class="item-name">${model}</div>`;
+      if (categoryName) {
+        nameHtml = `<div class="item-name" style="flex:1; line-height: 1.4;">
+                      ${model}<br>
+                      <span style="font-size:11px; color:#888; font-weight:normal;">📦 類別：${categoryName}</span>
+                    </div>`;
+      }
+
       card.innerHTML = `
-        <div class="item-name">${model}</div>
+        ${nameHtml}
         <div class="qty-control">
           <button class="qty-btn" onclick="updateCart('${encodedModel}', -1)">-</button>
           <input type="number" class="qty-input" id="qty-${encodedModel}" value="${currentQty}" min="0" onchange="manualUpdateCart('${encodedModel}', this.value)" onfocus="this.select()">
@@ -365,42 +375,53 @@
     }
     // 🌟 新增：本地快速篩選功能
     function filterItems() {
-      const input = document.getElementById("searchInput").value.toUpperCase();
+      const input = document.getElementById("searchInput").value.trim().toUpperCase();
       const listContainer = document.getElementById("item-list");
-      const cards = listContainer.querySelectorAll(".item-card");
+      const tabsContainer = document.getElementById("category-tabs");
+      const noResultElem = document.getElementById("no-result");
+
+      // 1. 若清空搜尋框，恢復「單一分類瀏覽模式」
+      if (input === "") {
+        tabsContainer.style.display = "flex";
+        noResultElem.style.display = "none";
+        renderItems(currentCategory);
+        return;
+      }
+
+      // 2. 進入「全域搜尋模式」：隱藏上方的橫向分類列，清空目前畫面
+      tabsContainer.style.display = "none";
+      listContainer.innerHTML = "";
       let visibleCount = 0;
 
-      // 1. 篩選物料卡片
-      cards.forEach(card => {
-        const modelName = card.querySelector(".item-name").innerText.toUpperCase();
-        if (modelName.indexOf(input) > -1) {
-          card.style.display = "flex";
-          visibleCount++;
+      // 3. 跨類別掃描全庫存資料 (materialsData)
+      for (const cat in materialsData) {
+        const categoryData = materialsData[cat];
+
+        if (Array.isArray(categoryData)) {
+          // 一般類別陣列
+          categoryData.forEach(model => {
+            if (model.toUpperCase().indexOf(input) > -1) {
+              listContainer.appendChild(createItemCard(model, cat)); // 傳入類別名稱以供顯示
+              visibleCount++;
+            }
+          });
         } else {
-          card.style.display = "none";
-        }
-      });
-
-      // 2. 完美處理「單體」的頻率標題 (若底下沒卡片就隱藏標題)
-      const freqHeaders = listContainer.querySelectorAll(".freq-header");
-      freqHeaders.forEach(header => {
-        let nextElem = header.nextElementSibling;
-        let hasVisibleCard = false;
-        
-        while (nextElem && !nextElem.classList.contains("freq-header")) {
-          if (nextElem.classList.contains("item-card") && nextElem.style.display !== "none") {
-            hasVisibleCard = true;
-            break;
+          // 處理「單體」這種帶有子頻率的特殊物件
+          for (const freq in categoryData) {
+            categoryData[freq].forEach(model => {
+              if (model.toUpperCase().indexOf(input) > -1) {
+                listContainer.appendChild(createItemCard(model, cat)); // 傳入類別名稱以供顯示
+                visibleCount++;
+              }
+            });
           }
-          nextElem = nextElem.nextElementSibling;
         }
-        header.style.display = hasVisibleCard ? "block" : "none";
-      });
+      }
 
-      // 3. 顯示或隱藏「找不到型號」提示
-      const noResultElem = document.getElementById("no-result");
+      // 4. 更新找不到結果的提示文字
       if (noResultElem) {
         noResultElem.style.display = visibleCount === 0 ? "block" : "none";
+        noResultElem.innerText = "全庫存中找不到符合的型號";
       }
     }
   </script>
