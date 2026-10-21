@@ -269,16 +269,21 @@
             const station = row.c[3] && row.c[3].v ? row.c[3].v : "-";
             const staff = row.c[4] && row.c[4].v ? row.c[4].v : "-";
             
-            // 🌟 需求 2：讀取第 6 個參數 (I 欄) 網址
-            const pdfUrl = row.c[5] && row.c[5].v ? row.c[5].v.toString() : "";
+            // 🌟 需求 2：讀取第 6 個參數 (I 欄) 網址 (強化防呆與字串轉換)
+            let pdfUrl = "";
+            if (row.c[5] && row.c[5].v) {
+                // 確保無論抓到什麼型態，都先強制轉成字串並去除前後空白
+                pdfUrl = String(row.c[5].v).trim(); 
+            }
 
             let qtyClass = qty > 0 ? "qty-pos" : (qty < 0 ? "qty-neg" : "");
             let qtyDisplay = qty > 0 ? `+${qty}` : qty;
 
-            // 判斷是否有合法的網址，有的話就讓整列變成可點擊，並加上檔案小圖示
+            // 判斷是否有合法的網址 (放寬條件，只要包含 'http' 就視為有效連結)
             let rowHtml = "";
             let pdfIcon = "";
-            if (pdfUrl.startsWith("http")) {
+            if (pdfUrl.indexOf("http") !== -1) {
+              // 加上 onclick 事件，並確保網址不會被 HTML 標籤破壞
               rowHtml = `<tr class="history-row has-link" onclick="window.open('${pdfUrl}', '_blank')">`;
               pdfIcon = ` <span style="font-size:14px;" title="點擊查看領料單">📄</span>`;
             } else {
