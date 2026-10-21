@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>即時庫存查詢</title>
+  <title>即時庫存查詢系統</title>
   <style>
     :root {
       --primary: #06C755; 
@@ -16,26 +16,43 @@
     header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
     #status-box { font-size: 12px; color: #888; margin-top: 5px; font-weight: normal; }
 
-    /* 搜尋列設計 */
-    .search-container { padding: 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; }
-    .search-input { width: 100%; padding: 12px 15px; font-size: 16px; border: 1px solid #ddd; border-radius: 25px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s; }
-    .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
+    /* 橫向滑動的大類別導航 */
+    .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 55px; z-index: 99; }
+    .category-scroll::-webkit-scrollbar { display: none; } 
+    .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
+    .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
 
     /* 庫存列表區 */
     .inventory-container { padding: 15px; padding-bottom: 30px; }
-    .category-group { margin-bottom: 20px; }
-    .category-title { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
+    .freq-header { font-size: 13px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-left: 4px solid var(--primary); padding-left: 8px; }
     
-    .item-row { background: var(--card-bg); border-radius: 8px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;}
+    .item-card:active { transform: scale(0.98); background: #f0f8ff; }
     .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
-    .item-qty { font-size: 18px; font-weight: bold; color: var(--primary); background: #e6ffe6; padding: 4px 12px; border-radius: 15px; }
     
-    /* 低庫存警示樣式 (<=3 的時候變紅) */
+    /* 數量標籤設計 */
+    .item-qty { font-size: 18px; font-weight: bold; color: var(--primary); background: #e6ffe6; padding: 4px 12px; border-radius: 15px; min-width: 30px; text-align: center;}
     .qty-low { color: #ff3b30; background: #ffebeb; }
     .qty-zero { color: #fff; background: #ff3b30; }
 
+    /* 歷史紀錄彈窗 (Modal) */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
+    .modal-content { background: #fff; width: 100%; height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+    .modal-title { font-size: 16px; font-weight: bold; color: var(--primary); word-break: break-all; padding-right:10px; }
+    .close-btn { background: none; border: none; font-size: 28px; color: #888; cursor: pointer; padding: 0;}
+    
+    /* 歷史紀錄表格 */
+    .history-table-container { overflow-y: auto; flex: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center;}
+    th { position: sticky; top: 0; background: #f0f0f0; padding: 10px 5px; font-weight: bold; color: #555; }
+    td { padding: 10px 5px; border-bottom: 1px solid #eee; word-break: break-word;}
+    .qty-pos { color: var(--primary); font-weight: bold; } /* 退料(正數) */
+    .qty-neg { color: #ff3b30; font-weight: bold; } /* 領料(負數) */
+
     .loader { text-align: center; padding: 40px 20px; color: #888; }
-    .no-result { text-align: center; padding: 20px; color: #888; display: none; }
   </style>
 </head>
 <body>
@@ -45,26 +62,60 @@
     <div id="status-box">連線中...</div>
   </header>
 
-  <div class="search-container">
-    <input type="text" id="searchInput" class="search-input" placeholder="🔍 輸入型號關鍵字快速搜尋..." onkeyup="filterInventory()">
-  </div>
+  <!-- 橫向類別導航 -->
+  <div class="category-scroll" id="category-tabs"></div>
 
+  <!-- 物料清單顯示區 -->
   <div class="inventory-container" id="inventory-list">
     <div class="loader">⏳ 正在同步雲端庫存資料...</div>
   </div>
-  <div class="no-result" id="no-result">沒有找到符合的物料型號</div>
+
+  <!-- 歷史紀錄彈窗 -->
+  <div class="modal-overlay" id="history-modal" onclick="closeHistory(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title" id="history-title">歷史紀錄</div>
+        <button class="close-btn" onclick="closeHistory()">×</button>
+      </div>
+      <div class="history-table-container">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th style="width: 25%">日期</th>
+              <th style="width: 15%">包商</th>
+              <th style="width: 15%">數量</th>
+              <th style="width: 25%">站台</th>
+              <th style="width: 20%">發料人</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <!-- 歷史紀錄會插在這裡 -->
+          </tbody>
+        </table>
+        <div id="history-loader" class="loader" style="display:none;">⏳ 正在抓取歷史紀錄...</div>
+        <div id="history-empty" style="text-align:center; padding:30px; color:#aaa; display:none;">目前尚無領退料紀錄</div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // 試算表 ID
+    // 試算表設定
     const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
-    const SHEET_NAME = encodeURIComponent('庫存');
     
-    let inventoryData = {}; // 格式: { "大類別": [ {model: "型號", qty: 數量} ] }
+    // 庫存資料存放處
+    let inventoryData = {}; 
+    let materialsMenu = {}; // 拿來存放單體的頻率架構
+    let currentCategory = "";
 
     document.addEventListener("DOMContentLoaded", fetchInventory);
 
+    // ==========================================
+    // 1. 抓取庫存與架構
+    // ==========================================
     function fetchInventory() {
-      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
+      // 這次我們同時需要知道「材料清單(用來建構分類)」和「庫存(用來填數量)」
+      // 為了效能，我們只讀「庫存」工作表，並自己動態建立分類結構
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('庫存')}&t=${new Date().getTime()}`;
 
       fetch(gvizUrl)
         .then(response => response.text())
@@ -74,90 +125,176 @@
 
           const rawData = JSON.parse(match[1]);
           inventoryData = {};
+          materialsMenu = {}; // 重建類似購物車的選單結構
 
           rawData.table.rows.forEach(row => {
             if (!row.c) return;
-            // 根據附圖二，A欄:大類別, B欄:型號, C欄:數量
             const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "未分類";
             const model = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
-            let qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
+            const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
 
-            if (!model || cat === "大類別") return; // 略過表頭或空白
+            if (!model || cat === "大類別") return; 
 
-            if (!inventoryData[cat]) inventoryData[cat] = [];
-            inventoryData[cat].push({ model: model, qty: qty });
+            // 存入庫存數值對照表 (Key: 型號)
+            inventoryData[model] = qty;
+
+            // 建立導航結構
+            if (cat === "單體") {
+              // 為了簡單處理，我們先把單體的頻率都視為 "全頻段" (因為庫存表沒有寫頻率)
+              // 實務上庫存表只有大類和型號，所以這會列在一起
+              if (!materialsMenu[cat]) materialsMenu[cat] = [];
+              materialsMenu[cat].push(model);
+            } else {
+              if (!materialsMenu[cat]) materialsMenu[cat] = [];
+              materialsMenu[cat].push(model);
+            }
           });
 
-          document.getElementById("status-box").innerHTML = "✅ 資料已更新至最新";
+          document.getElementById("status-box").innerHTML = "✅ 庫存資料已更新 (點擊品項可看紀錄)";
           document.getElementById("status-box").style.color = "green";
-          renderInventory();
+          renderCategoryTabs();
         })
         .catch(err => {
           document.getElementById("inventory-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料載入失敗: ${err.message}</div>`;
-          document.getElementById("status-box").innerHTML = "連線失敗";
         });
     }
 
-    // 渲染畫面
-    function renderInventory() {
+    // ==========================================
+    // 2. 渲染 UI: 橫向分類與物料卡片
+    // ==========================================
+    function renderCategoryTabs() {
+      const tabsContainer = document.getElementById("category-tabs");
+      tabsContainer.innerHTML = "";
+      
+      let isFirst = true;
+      for (const category in materialsMenu) {
+        let btn = document.createElement("button");
+        btn.className = "cat-tab";
+        if (isFirst) { btn.classList.add("active"); currentCategory = category; isFirst = false; }
+        btn.innerText = category;
+        btn.onclick = () => selectCategory(category, btn);
+        tabsContainer.appendChild(btn);
+      }
+      
+      renderItems(currentCategory);
+    }
+
+    function selectCategory(category, btnElement) {
+      currentCategory = category;
+      document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+      btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      renderItems(category);
+    }
+
+    function renderItems(category) {
       const listContainer = document.getElementById("inventory-list");
       listContainer.innerHTML = "";
+      const models = materialsMenu[category];
 
-      for (const category in inventoryData) {
-        let groupDiv = document.createElement("div");
-        groupDiv.className = "category-group";
+      if (!models) return;
+
+      models.forEach(model => {
+        let qty = inventoryData[model] || 0;
         
-        let title = document.createElement("div");
-        title.className = "category-title";
-        title.innerText = category;
-        groupDiv.appendChild(title);
+        let qtyClass = "item-qty";
+        if (qty === 0) qtyClass += " qty-zero";
+        else if (qty <= 3) qtyClass += " qty-low";
 
-        inventoryData[category].forEach(item => {
-          let row = document.createElement("div");
-          row.className = "item-row";
-          
-          // 根據數量給予不同顏色的標籤
-          let qtyClass = "item-qty";
-          if (item.qty === 0) qtyClass += " qty-zero";
-          else if (item.qty <= 3) qtyClass += " qty-low";
+        // 對 model 進行編碼，防止引號導致 onclick 壞掉
+        const safeModel = encodeURIComponent(model);
 
-          row.innerHTML = `
-            <div class="item-name">${item.model}</div>
-            <div class="${qtyClass}">${item.qty}</div>
-          `;
-          groupDiv.appendChild(row);
-        });
-
-        listContainer.appendChild(groupDiv);
-      }
+        let card = document.createElement("div");
+        card.className = "item-card";
+        // 點擊卡片觸發查詢歷史紀錄
+        card.onclick = () => openHistory(safeModel);
+        
+        card.innerHTML = `
+          <div class="item-name">${model}</div>
+          <div class="${qtyClass}">${qty}</div>
+        `;
+        listContainer.appendChild(card);
+      });
     }
 
-    // 關鍵字即時搜尋功能
-    function filterInventory() {
-      const input = document.getElementById("searchInput").value.toUpperCase();
-      const groups = document.querySelectorAll(".category-group");
-      let visibleCount = 0;
+    // ==========================================
+    // 3. 歷史紀錄查詢 (查詢「紀錄」工作表)
+    // ==========================================
+    function openHistory(encodedModel) {
+      const targetModel = decodeURIComponent(encodedModel);
+      
+      // 開啟 Modal 並初始化 UI
+      document.getElementById("history-modal").style.display = "flex";
+      document.getElementById("history-title").innerText = `📦 ${targetModel}`;
+      document.getElementById("history-body").innerHTML = "";
+      document.getElementById("history-loader").style.display = "block";
+      document.getElementById("history-empty").style.display = "none";
 
-      groups.forEach(group => {
-        const rows = group.querySelectorAll(".item-row");
-        let groupHasVisibleRow = false;
+      // 使用 GViz 查詢「紀錄」工作表
+      // A:時間, B:包商, C:類型, D:大類別, E:型號, F:數量, G:站台, H:發料人
+      // 🚀 SQL 查詢法：利用 query 參數直接請 Google 篩選出該型號的資料，並依時間倒序排列
+      const queryStr = encodeURIComponent(`select A, B, F, G, H where E = '${targetModel.replace(/'/g, "\\'")}' order by A desc`);
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('紀錄')}&tq=${queryStr}&t=${new Date().getTime()}`;
 
-        rows.forEach(row => {
-          const modelName = row.querySelector(".item-name").innerText.toUpperCase();
-          if (modelName.indexOf(input) > -1) {
-            row.style.display = "flex";
-            groupHasVisibleRow = true;
-            visibleCount++;
-          } else {
-            row.style.display = "none";
+      fetch(gvizUrl)
+        .then(response => response.text())
+        .then(text => {
+          const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+          if (!match || !match[1]) throw new Error("解析失敗");
+          
+          const rawData = JSON.parse(match[1]);
+          const rows = rawData.table.rows;
+          document.getElementById("history-loader").style.display = "none";
+
+          if (rows.length === 0) {
+             document.getElementById("history-empty").style.display = "block";
+             return;
           }
+
+          let tbodyHtml = "";
+          rows.forEach(row => {
+            if (!row.c) return;
+            // 處理時間格式 (Google GViz 會回傳 Date(2026,2,17,9,25,23) 格式的字串)
+            let dateStr = "";
+            if (row.c[0] && row.c[0].f) {
+                // 如果有格式化好的字串 (如 2026/3/17 上午 9:25:23)
+                dateStr = row.c[0].f.replace(/上午|下午/g, "").substring(5, 16); // 簡化為 3/17 9:25
+            } else {
+                dateStr = "未知時間";
+            }
+
+            const contractor = row.c[1] && row.c[1].v ? row.c[1].v : "-";
+            const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
+            const station = row.c[3] && row.c[3].v ? row.c[3].v : "-";
+            const staff = row.c[4] && row.c[4].v ? row.c[4].v : "-";
+
+            // 數量樣式：正數(退料)為綠色，負數(領料)為紅色
+            let qtyClass = qty > 0 ? "qty-pos" : (qty < 0 ? "qty-neg" : "");
+            let qtyDisplay = qty > 0 ? `+${qty}` : qty;
+
+            tbodyHtml += `
+              <tr>
+                <td style="font-size:11px; color:#777;">${dateStr}</td>
+                <td>${contractor}</td>
+                <td class="${qtyClass}">${qtyDisplay}</td>
+                <td style="font-size:12px;">${station}</td>
+                <td>${staff}</td>
+              </tr>
+            `;
+          });
+          
+          document.getElementById("history-body").innerHTML = tbodyHtml;
+        })
+        .catch(err => {
+          document.getElementById("history-loader").style.display = "none";
+          document.getElementById("history-body").innerHTML = `<tr><td colspan="5" style="color:red; padding:20px;">讀取失敗: ${err.message}</td></tr>`;
         });
+    }
 
-        // 如果整個類別都沒東西，就把類別標題也隱藏
-        group.style.display = groupHasVisibleRow ? "block" : "none";
-      });
-
-      document.getElementById("no-result").style.display = visibleCount === 0 ? "block" : "none";
+    function closeHistory(event) {
+      // 點擊背景遮罩也可以關閉
+      if (event && event.target !== document.getElementById("history-modal")) return;
+      document.getElementById("history-modal").style.display = "none";
     }
   </script>
 </body>
