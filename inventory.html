@@ -13,35 +13,39 @@
     }
     body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text-main); }
     
-    header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-    #status-box { font-size: 12px; color: #888; margin-top: 5px; font-weight: normal; }
+    /* 標題列：改為 Flex 佈局以放置右上角按鈕 */
+    header { background: #fff; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+    .header-title { font-size: 16px; font-weight: bold; display: flex; flex-direction: column; }
+    #status-box { font-size: 11px; color: #888; font-weight: normal; margin-top: 2px;}
+    .global-search-btn { background: var(--primary); color: #fff; border: none; padding: 8px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(6,199,85,0.3); }
+
+    /* 本地型號篩選列 */
+    .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 60px; z-index: 99; border-bottom: 1px solid #eee; }
+    .search-input { width: 100%; padding: 10px 15px; font-size: 14px; border: 1px solid #ddd; border-radius: 20px; box-sizing: border-box; outline: none; background: #f9f9f9; }
 
     /* 橫向滑動的大類別導航 */
-    .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 55px; z-index: 99; }
+    .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 115px; z-index: 98; }
     .category-scroll::-webkit-scrollbar { display: none; } 
     .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
     .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
 
     /* 庫存列表區 */
     .inventory-container { padding: 15px; padding-bottom: 30px; }
-    .freq-header { font-size: 13px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-left: 4px solid var(--primary); padding-left: 8px; }
-    
     .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;}
     .item-card:active { transform: scale(0.98); background: #f0f8ff; }
     .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
     
-    /* 數量標籤設計 */
     .item-qty { font-size: 18px; font-weight: bold; color: var(--primary); background: #e6ffe6; padding: 4px 12px; border-radius: 15px; min-width: 30px; text-align: center;}
     .qty-low { color: #ff3b30; background: #ffebeb; }
     .qty-zero { color: #fff; background: #ff3b30; }
 
-    /* 歷史紀錄彈窗 (Modal) */
+    /* 彈窗 (Modal) 共用設定 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
     .modal-content { background: #fff; width: 100%; height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
-    .modal-title { font-size: 16px; font-weight: bold; color: var(--primary); word-break: break-all; padding-right:10px; }
+    .modal-title { font-size: 16px; font-weight: bold; color: var(--primary); word-break: break-all; padding-right:10px; flex:1; display: flex; align-items: center;}
     .close-btn { background: none; border: none; font-size: 28px; color: #888; cursor: pointer; padding: 0;}
     
     /* 歷史紀錄表格 */
@@ -49,32 +53,40 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center;}
     th { position: sticky; top: 0; background: #f0f0f0; padding: 10px 5px; font-weight: bold; color: #555; }
     td { padding: 10px 5px; border-bottom: 1px solid #eee; word-break: break-word;}
-    .qty-pos { color: var(--primary); font-weight: bold; } /* 退料(正數) */
-    .qty-neg { color: #ff3b30; font-weight: bold; } /* 領料(負數) */
-
-    .loader { text-align: center; padding: 40px 20px; color: #888; }
-    
+    .qty-pos { color: var(--primary); font-weight: bold; } 
+    .qty-neg { color: #ff3b30; font-weight: bold; } 
     .history-row { transition: background-color 0.2s; }
     .history-row.has-link { cursor: pointer; }
     .history-row.has-link:active { background-color: #e6f7ff; }
+
+    .loader { text-align: center; padding: 40px 20px; color: #888; }
+    .no-result { text-align: center; padding: 20px; color: #888; display: none; }
   </style>
 </head>
 <body>
 
+  <!-- 頂部區塊：包含標題與全域搜尋按鈕 -->
   <header>
-    🔍 即時庫存查詢系統
-    <div id="status-box">連線中...</div>
+    <div class="header-title">
+      🔍 即時庫存系統
+      <div id="status-box">連線中...</div>
+    </div>
+    <button class="global-search-btn" onclick="openGlobalSearch()">全域紀錄搜尋</button>
   </header>
 
-  <!-- 橫向類別導航 -->
+  <!-- 本地過濾目前顯示的庫存型號 -->
+  <div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速篩選下方型號..." onkeyup="filterInventory()">
+  </div>
+
   <div class="category-scroll" id="category-tabs"></div>
 
-  <!-- 物料清單顯示區 -->
   <div class="inventory-container" id="inventory-list">
     <div class="loader">⏳ 正在同步雲端庫存資料...</div>
   </div>
+  <div class="no-result" id="no-result">該類別沒有符合的型號</div>
 
-  <!-- 歷史紀錄彈窗 -->
+  <!-- 1. 單一型號歷史紀錄彈窗 -->
   <div class="modal-overlay" id="history-modal" onclick="closeHistory(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -92,23 +104,45 @@
               <th style="width: 20%">發料人</th>
             </tr>
           </thead>
-          <tbody id="history-body">
-            <!-- 歷史紀錄會插在這裡 -->
-          </tbody>
+          <tbody id="history-body"></tbody>
         </table>
-        <div id="history-loader" class="loader" style="display:none;">⏳ 正在抓取歷史紀錄...</div>
-        <div id="history-empty" style="text-align:center; padding:30px; color:#aaa; display:none;">目前尚無領退料紀錄</div>
+        <div id="history-loader" class="loader" style="display:none;">⏳ 正在抓取紀錄...</div>
+        <div id="history-empty" style="text-align:center; padding:30px; color:#aaa; display:none;">尚無紀錄</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 全域關鍵字搜尋彈窗 -->
+  <div class="modal-overlay" id="global-search-modal" onclick="closeGlobalSearch(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <input type="text" id="global-search-input" placeholder="輸入包商、站台、型號..." style="flex:1; padding:10px; border:2px solid var(--primary); border-radius:10px; font-size:14px; outline:none;">
+        <button onclick="executeGlobalSearch()" style="background:var(--primary); color:#fff; border:none; padding:10px 15px; margin-left:10px; border-radius:10px; font-weight:bold; cursor:pointer;">搜尋</button>
+        <button class="close-btn" onclick="closeGlobalSearch()" style="margin-left:15px;">×</button>
+      </div>
+      <div class="history-table-container">
+        <table id="global-search-table">
+          <thead>
+            <tr>
+              <th style="width: 20%">日期</th>
+              <th style="width: 15%">包商</th>
+              <th style="width: 30%">型號</th>
+              <th style="width: 10%">數量</th>
+              <th style="width: 25%">站台/發料</th>
+            </tr>
+          </thead>
+          <tbody id="global-search-body"></tbody>
+        </table>
+        <div id="global-search-loader" class="loader" style="display:none;">⏳ 搜尋全庫存紀錄中...</div>
+        <div id="global-search-empty" style="text-align:center; padding:30px; color:#aaa; display:none;">輸入關鍵字並點擊搜尋</div>
       </div>
     </div>
   </div>
 
   <script>
-    // 試算表設定
     const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
-    
-    // 庫存資料存放處
     let inventoryData = {}; 
-    let materialsMenu = {}; // 拿來存放單體的頻率架構
+    let materialsMenu = {}; 
     let currentCategory = "";
 
     document.addEventListener("DOMContentLoaded", fetchInventory);
@@ -117,8 +151,6 @@
     // 1. 抓取庫存與架構
     // ==========================================
     function fetchInventory() {
-      // 這次我們同時需要知道「材料清單(用來建構分類)」和「庫存(用來填數量)」
-      // 為了效能，我們只讀「庫存」工作表，並自己動態建立分類結構
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('庫存')}&t=${new Date().getTime()}`;
 
       fetch(gvizUrl)
@@ -129,32 +161,23 @@
 
           const rawData = JSON.parse(match[1]);
           inventoryData = {};
-          materialsMenu = {}; // 重建類似購物車的選單結構
+          materialsMenu = {}; 
 
           rawData.table.rows.forEach(row => {
             if (!row.c) return;
-            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "未分類";
-            const model = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
+            const cat = row.c[0] && row.c[0].v ? String(row.c[0].v).trim().toUpperCase() : "未分類";
+            const model = row.c[1] && row.c[1].v ? String(row.c[1].v).trim().toUpperCase() : "";
             const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
 
             if (!model || cat === "大類別") return; 
 
-            // 存入庫存數值對照表 (Key: 型號)
             inventoryData[model] = qty;
 
-            // 建立導航結構
-            if (cat === "單體") {
-              // 為了簡單處理，我們先把單體的頻率都視為 "全頻段" (因為庫存表沒有寫頻率)
-              // 實務上庫存表只有大類和型號，所以這會列在一起
-              if (!materialsMenu[cat]) materialsMenu[cat] = [];
-              materialsMenu[cat].push(model);
-            } else {
-              if (!materialsMenu[cat]) materialsMenu[cat] = [];
-              materialsMenu[cat].push(model);
-            }
+            if (!materialsMenu[cat]) materialsMenu[cat] = [];
+            materialsMenu[cat].push(model);
           });
 
-          document.getElementById("status-box").innerHTML = "✅ 庫存資料已更新 (點擊品項可看紀錄)";
+          document.getElementById("status-box").innerHTML = "✅ 庫存已同步";
           document.getElementById("status-box").style.color = "green";
           renderCategoryTabs();
         })
@@ -163,9 +186,6 @@
         });
     }
 
-    // ==========================================
-    // 2. 渲染 UI: 橫向分類與物料卡片
-    // ==========================================
     function renderCategoryTabs() {
       const tabsContainer = document.getElementById("category-tabs");
       tabsContainer.innerHTML = "";
@@ -179,7 +199,6 @@
         btn.onclick = () => selectCategory(category, btn);
         tabsContainer.appendChild(btn);
       }
-      
       renderItems(currentCategory);
     }
 
@@ -188,6 +207,7 @@
       document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
       btnElement.classList.add('active');
       btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      document.getElementById("searchInput").value = ""; // 切換分類時清空搜尋
       renderItems(category);
     }
 
@@ -195,22 +215,19 @@
       const listContainer = document.getElementById("inventory-list");
       listContainer.innerHTML = "";
       const models = materialsMenu[category];
+      document.getElementById("no-result").style.display = "none";
 
       if (!models) return;
 
       models.forEach(model => {
         let qty = inventoryData[model] || 0;
-        
         let qtyClass = "item-qty";
         if (qty === 0) qtyClass += " qty-zero";
         else if (qty <= 3) qtyClass += " qty-low";
 
-        // 對 model 進行編碼，防止引號導致 onclick 壞掉
         const safeModel = encodeURIComponent(model);
-
         let card = document.createElement("div");
         card.className = "item-card";
-        // 點擊卡片觸發查詢歷史紀錄
         card.onclick = () => openHistory(safeModel);
         
         card.innerHTML = `
@@ -221,8 +238,26 @@
       });
     }
 
+    // 本地快速篩選
+    function filterInventory() {
+      const input = document.getElementById("searchInput").value.toUpperCase();
+      const cards = document.querySelectorAll(".item-card");
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const modelName = card.querySelector(".item-name").innerText.toUpperCase();
+        if (modelName.indexOf(input) > -1) {
+          card.style.display = "flex";
+          visibleCount++;
+        } else {
+          card.style.display = "none";
+        }
+      });
+      document.getElementById("no-result").style.display = visibleCount === 0 ? "block" : "none";
+    }
+
     // ==========================================
-    // 3. 歷史紀錄查詢 (查詢「紀錄」工作表)
+    // 2. 單一型號歷史紀錄
     // ==========================================
     function openHistory(encodedModel) {
       const targetModel = decodeURIComponent(encodedModel);
@@ -233,13 +268,55 @@
       document.getElementById("history-loader").style.display = "block";
       document.getElementById("history-empty").style.display = "none";
 
-      // 🚀 關鍵修改：加上抓取 I 欄 (PDF網址)
-      // 🌟 將目標型號轉大寫，並要求 SQL 將 E 欄 (型號) 轉大寫後再進行比對
       const safeModel = targetModel.toUpperCase().replace(/'/g, "\\'");
-      const queryStr = encodeURIComponent(`select A, B, F, G, H, I where upper(E) = '${safeModel}' order by A desc`);
+      const queryStr = encodeURIComponent(`select A, B, F, G, H, I where upper(E) = '${safeModel}' order by A desc limit 50`);
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('紀錄')}&tq=${queryStr}&t=${new Date().getTime()}`;
 
-      fetch(gvizUrl)
+      fetchAndRenderTable(gvizUrl, "history-body", "history-loader", "history-empty", false);
+    }
+
+    function closeHistory(event) {
+      if (event && event.target !== document.getElementById("history-modal")) return;
+      document.getElementById("history-modal").style.display = "none";
+    }
+
+    // ==========================================
+    // 3. 全域關鍵字歷史紀錄搜尋
+    // ==========================================
+    function openGlobalSearch() {
+      document.getElementById('global-search-modal').style.display = 'flex';
+      document.getElementById('global-search-body').innerHTML = '';
+      document.getElementById('global-search-empty').style.display = 'block';
+      document.getElementById('global-search-empty').innerText = "輸入關鍵字並點擊搜尋";
+      document.getElementById('global-search-input').value = '';
+      setTimeout(() => document.getElementById('global-search-input').focus(), 100);
+    }
+
+    function closeGlobalSearch(event) {
+      if (event && event.target !== document.getElementById("global-search-modal")) return;
+      document.getElementById("global-search-modal").style.display = "none";
+    }
+
+    function executeGlobalSearch() {
+      const keyword = document.getElementById('global-search-input').value.trim().toUpperCase().replace(/'/g, "\\'");
+      if (!keyword) return alert("請輸入搜尋關鍵字！");
+
+      document.getElementById("global-search-body").innerHTML = "";
+      document.getElementById("global-search-loader").style.display = "block";
+      document.getElementById("global-search-empty").style.display = "none";
+
+      // 🌟 SQL: 搜尋 型號(E), 包商(B), 站台(G), 發料人(H)
+      const queryStr = encodeURIComponent(`select A, B, E, F, G, H, I where upper(E) contains '${keyword}' or upper(B) contains '${keyword}' or upper(G) contains '${keyword}' or upper(H) contains '${keyword}' order by A desc limit 50`);
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('紀錄')}&tq=${queryStr}&t=${new Date().getTime()}`;
+
+      fetchAndRenderTable(gvizUrl, "global-search-body", "global-search-loader", "global-search-empty", true);
+    }
+
+    // ==========================================
+    // 4. 共用解析與渲染表格邏輯
+    // ==========================================
+    function fetchAndRenderTable(url, tbodyId, loaderId, emptyId, isGlobal) {
+      fetch(url)
         .then(response => response.text())
         .then(text => {
           const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
@@ -247,10 +324,11 @@
           
           const rawData = JSON.parse(match[1]);
           const rows = rawData.table.rows;
-          document.getElementById("history-loader").style.display = "none";
+          document.getElementById(loaderId).style.display = "none";
 
           if (rows.length === 0) {
-             document.getElementById("history-empty").style.display = "block";
+             document.getElementById(emptyId).style.display = "block";
+             document.getElementById(emptyId).innerText = "找不到符合的紀錄";
              return;
           }
 
@@ -258,61 +336,78 @@
           rows.forEach(row => {
             if (!row.c) return;
             
-            // 🌟 需求 1：只顯示日期 (利用空白分割字串)
-            let dateStr = "未知日期";
-            if (row.c[0] && row.c[0].f) {
-                dateStr = row.c[0].f.split(" ")[0]; // 切割後只拿 "2026/3/11"
+            let dateStr = "未知";
+            if (row.c[0] && row.c[0].f) dateStr = row.c[0].f.split(" ")[0].substring(5); // 取出 MM/DD
+            
+            let contractor, model, qty, station, staff, pdfUrlIdx;
+
+            // 根據查出來的欄位數量判定是單一型號還是全域
+            if (isGlobal) {
+                // 全域包含型號: A(0), B(1), E(2), F(3), G(4), H(5), I(6)
+                contractor = row.c[1] && row.c[1].v ? row.c[1].v : "-";
+                model = row.c[2] && row.c[2].v ? String(row.c[2].v) : "-";
+                qty = row.c[3] && row.c[3].v !== null ? Number(row.c[3].v) : 0;
+                station = row.c[4] && row.c[4].v ? row.c[4].v : "-";
+                staff = row.c[5] && row.c[5].v ? row.c[5].v : "-";
+                pdfUrlIdx = 6;
+            } else {
+                // 單一不包含型號: A(0), B(1), F(2), G(3), H(4), I(5)
+                contractor = row.c[1] && row.c[1].v ? row.c[1].v : "-";
+                qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
+                station = row.c[3] && row.c[3].v ? row.c[3].v : "-";
+                staff = row.c[4] && row.c[4].v ? row.c[4].v : "-";
+                pdfUrlIdx = 5;
             }
 
-            const contractor = row.c[1] && row.c[1].v ? row.c[1].v : "-";
-            const qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
-            const station = row.c[3] && row.c[3].v ? row.c[3].v : "-";
-            const staff = row.c[4] && row.c[4].v ? row.c[4].v : "-";
-            
-            // 🌟 需求 2：讀取第 6 個參數 (I 欄) 網址 (強化防呆與字串轉換)
             let pdfUrl = "";
-            if (row.c[5] && row.c[5].v) {
-                // 確保無論抓到什麼型態，都先強制轉成字串並去除前後空白
-                pdfUrl = String(row.c[5].v).trim(); 
+            if (row.c[pdfUrlIdx] && row.c[pdfUrlIdx].v) {
+                pdfUrl = String(row.c[pdfUrlIdx].v).trim(); 
             }
 
             let qtyClass = qty > 0 ? "qty-pos" : (qty < 0 ? "qty-neg" : "");
             let qtyDisplay = qty > 0 ? `+${qty}` : qty;
 
-            // 判斷是否有合法的網址 (放寬條件，只要包含 'http' 就視為有效連結)
             let rowHtml = "";
             let pdfIcon = "";
             if (pdfUrl.indexOf("http") !== -1) {
-              // 加上 onclick 事件，並確保網址不會被 HTML 標籤破壞
               rowHtml = `<tr class="history-row has-link" onclick="window.open('${pdfUrl}', '_blank')">`;
-              pdfIcon = ` <span style="font-size:14px;" title="點擊查看領料單">📄</span>`;
+              pdfIcon = `<br><span style="font-size:12px; background:#f0f0f0; padding:1px 4px; border-radius:3px;">📄單</span>`;
             } else {
               rowHtml = `<tr class="history-row">`;
             }
 
-            tbodyHtml += `
-              ${rowHtml}
-                <td style="font-size:12px; color:#555;">${dateStr}${pdfIcon}</td>
-                <td>${contractor}</td>
-                <td class="${qtyClass}">${qtyDisplay}</td>
-                <td style="font-size:12px;">${station}</td>
-                <td>${staff}</td>
-              </tr>
-            `;
+            // 輸出 HTML
+            if (isGlobal) {
+              // 全域表格排版
+              tbodyHtml += `
+                ${rowHtml}
+                  <td style="font-size:11px; color:#555; line-height: 1.4;">${dateStr}${pdfIcon}</td>
+                  <td style="font-size:12px;">${contractor}</td>
+                  <td style="font-size:11px; font-weight:bold;">${model}</td>
+                  <td class="${qtyClass}">${qtyDisplay}</td>
+                  <td style="font-size:11px; line-height: 1.4;">${station}<br><span style="color:#888">${staff}</span></td>
+                </tr>
+              `;
+            } else {
+              // 單一型號表格排版
+              tbodyHtml += `
+                ${rowHtml}
+                  <td style="font-size:12px; color:#555;">${dateStr}${pdfIcon}</td>
+                  <td>${contractor}</td>
+                  <td class="${qtyClass}">${qtyDisplay}</td>
+                  <td style="font-size:12px;">${station}</td>
+                  <td>${staff}</td>
+                </tr>
+              `;
+            }
           });
           
-          document.getElementById("history-body").innerHTML = tbodyHtml;
+          document.getElementById(tbodyId).innerHTML = tbodyHtml;
         })
         .catch(err => {
-          document.getElementById("history-loader").style.display = "none";
-          document.getElementById("history-body").innerHTML = `<tr><td colspan="5" style="color:red; padding:20px;">讀取失敗: ${err.message}</td></tr>`;
+          document.getElementById(loaderId).style.display = "none";
+          document.getElementById(tbodyId).innerHTML = `<tr><td colspan="5" style="color:red; padding:20px;">讀取失敗: ${err.message}</td></tr>`;
         });
-    }
-
-    function closeHistory(event) {
-      // 點擊背景遮罩也可以關閉
-      if (event && event.target !== document.getElementById("history-modal")) return;
-      document.getElementById("history-modal").style.display = "none";
     }
   </script>
 </body>
