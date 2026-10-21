@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>即時庫存查詢</title>
+  <style>
+    :root {
+      --primary: #06C755; 
+      --bg: #f5f6f8;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text-main); }
+    
+    header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+    #status-box { font-size: 12px; color: #888; margin-top: 5px; font-weight: normal; }
+
+    /* 搜尋列設計 */
+    .search-container { padding: 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; }
+    .search-input { width: 100%; padding: 12px 15px; font-size: 16px; border: 1px solid #ddd; border-radius: 25px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s; }
+    .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
+
+    /* 庫存列表區 */
+    .inventory-container { padding: 15px; padding-bottom: 30px; }
+    .category-group { margin-bottom: 20px; }
+    .category-title { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
+    
+    .item-row { background: var(--card-bg); border-radius: 8px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
+    .item-qty { font-size: 18px; font-weight: bold; color: var(--primary); background: #e6ffe6; padding: 4px 12px; border-radius: 15px; }
+    
+    /* 低庫存警示樣式 (<=3 的時候變紅) */
+    .qty-low { color: #ff3b30; background: #ffebeb; }
+    .qty-zero { color: #fff; background: #ff3b30; }
+
+    .loader { text-align: center; padding: 40px 20px; color: #888; }
+    .no-result { text-align: center; padding: 20px; color: #888; display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    🔍 即時庫存查詢系統
+    <div id="status-box">連線中...</div>
+  </header>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 輸入型號關鍵字快速搜尋..." onkeyup="filterInventory()">
+  </div>
+
+  <div class="inventory-container" id="inventory-list">
+    <div class="loader">⏳ 正在同步雲端庫存資料...</div>
+  </div>
+  <div class="no-result" id="no-result">沒有找到符合的物料型號</div>
+
+  <script>
+    // 試算表 ID
+    const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
+    const SHEET_NAME = encodeURIComponent('庫存');
+    
+    let inventoryData = {}; // 格式: { "大類別": [ {model: "型號", qty: 數量} ] }
+
+    document.addEventListener("DOMContentLoaded", fetchInventory);
+
+    function fetchInventory() {
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
+
+      fetch(gvizUrl)
+        .then(response => response.text())
+        .then(text => {
+          const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+          if (!match || !match[1]) throw new Error("資料格式解析失敗");
+
+          const rawData = JSON.parse(match[1]);
+          inventoryData = {};
+
+          rawData.table.rows.forEach(row => {
+            if (!row.c) return;
+            // 根據附圖二，A欄:大類別, B欄:型號, C欄:數量
+            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "未分類";
+            const model = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
+            let qty = row.c[2] && row.c[2].v !== null ? Number(row.c[2].v) : 0;
+
+            if (!model || cat === "大類別") return; // 略過表頭或空白
+
+            if (!inventoryData[cat]) inventoryData[cat] = [];
+            inventoryData[cat].push({ model: model, qty: qty });
+          });
+
+          document.getElementById("status-box").innerHTML = "✅ 資料已更新至最新";
+          document.getElementById("status-box").style.color = "green";
+          renderInventory();
+        })
+        .catch(err => {
+          document.getElementById("inventory-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料載入失敗: ${err.message}</div>`;
+          document.getElementById("status-box").innerHTML = "連線失敗";
+        });
+    }
+
+    // 渲染畫面
+    function renderInventory() {
+      const listContainer = document.getElementById("inventory-list");
+      listContainer.innerHTML = "";
+
+      for (const category in inventoryData) {
+        let groupDiv = document.createElement("div");
+        groupDiv.className = "category-group";
+        
+        let title = document.createElement("div");
+        title.className = "category-title";
+        title.innerText = category;
+        groupDiv.appendChild(title);
+
+        inventoryData[category].forEach(item => {
+          let row = document.createElement("div");
+          row.className = "item-row";
+          
+          // 根據數量給予不同顏色的標籤
+          let qtyClass = "item-qty";
+          if (item.qty === 0) qtyClass += " qty-zero";
+          else if (item.qty <= 3) qtyClass += " qty-low";
+
+          row.innerHTML = `
+            <div class="item-name">${item.model}</div>
+            <div class="${qtyClass}">${item.qty}</div>
+          `;
+          groupDiv.appendChild(row);
+        });
+
+        listContainer.appendChild(groupDiv);
+      }
+    }
+
+    // 關鍵字即時搜尋功能
+    function filterInventory() {
+      const input = document.getElementById("searchInput").value.toUpperCase();
+      const groups = document.querySelectorAll(".category-group");
+      let visibleCount = 0;
+
+      groups.forEach(group => {
+        const rows = group.querySelectorAll(".item-row");
+        let groupHasVisibleRow = false;
+
+        rows.forEach(row => {
+          const modelName = row.querySelector(".item-name").innerText.toUpperCase();
+          if (modelName.indexOf(input) > -1) {
+            row.style.display = "flex";
+            groupHasVisibleRow = true;
+            visibleCount++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+
+        // 如果整個類別都沒東西，就把類別標題也隱藏
+        group.style.display = groupHasVisibleRow ? "block" : "none";
+      });
+
+      document.getElementById("no-result").style.display = visibleCount === 0 ? "block" : "none";
+    }
+  </script>
+</body>
+</html>
