@@ -135,9 +135,10 @@
 
           rawData.table.rows.forEach(row => {
             if (!row.c) return;
-            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim() : "";
-            const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim() : "";
-            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim() : "";
+            // 🌟 全部加上 .toUpperCase() 強制轉大寫
+            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
+            const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
+            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
 
             if (!cat || !model || cat === "大類別") return; 
 
