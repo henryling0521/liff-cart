@@ -7,7 +7,7 @@
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     :root {
-      --primary: #06C755; /* LINE Green */
+      --primary: #06C755; 
       --bg: #f5f6f8;
       --card-bg: #ffffff;
       --text-main: #333333;
@@ -15,43 +15,35 @@
     }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg); color: var(--text-main); padding-bottom: 80px; }
     
-    /* 頂部狀態列 */
     header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
     #status-box { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-weight: normal; }
 
-   /* 🌟 新增：本地型號篩選列 */
     .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; }
     .search-input { width: 100%; padding: 10px 15px; font-size: 14px; border: 1px solid #ddd; border-radius: 20px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s;}
     .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
 
-    /* 橫向滑動的大類別導航 (🌟將 top 改為 110px 避免被搜尋列擋住) */
     .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 110px; z-index: 98; }
     .category-scroll::-webkit-scrollbar { display: none; } 
     .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
     .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
 
-    /* 🌟 新增：找不到型號時的提示 */
     .no-result { text-align: center; padding: 20px; color: #888; display: none; }
-    /* 物料列表區 */
     .item-container { padding: 15px; }
     .freq-header { font-size: 13px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-left: 4px solid var(--primary); padding-left: 8px; }
     .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
     
-    /* 🌟 升級版：大按鈕與輸入框設計 */
     .qty-control { display: flex; align-items: center; background: #f0f0f0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
     .qty-btn { width: 42px; height: 42px; border: none; background: #f0f0f0; font-size: 24px; color: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.1s; padding-bottom: 2px; }
     .qty-btn:active { background: #e0e0e0; }
     .qty-input { width: 50px; height: 42px; text-align: center; font-size: 16px; font-weight: bold; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd; background: #fff; outline: none; -moz-appearance: textfield; padding: 0; color: #333; }
     .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-    /* 底部懸浮購物車 */
     .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 1000; }
     .cart-info { font-size: 16px; font-weight: bold; display: flex; align-items: center; }
     .cart-badge { background: #ff3b30; color: white; border-radius: 50%; padding: 2px 8px; font-size: 14px; margin-left: 8px; }
     .view-cart-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; }
 
-    /* 購物車確認視窗 (Modal) */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
     .modal-content { background: #fff; width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -62,7 +54,6 @@
     .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
     .submit-btn { background: var(--primary); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
 
-    /* 載入中動畫 */
     .loader { text-align: center; padding: 40px 20px; color: #888; }
   </style>
 </head>
@@ -73,23 +64,18 @@
     <div id="status-box">LIFF 系統初始化中...</div>
   </header>
 
-  <!-- 🌟 新增：快速篩選輸入框 -->
   <div class="search-container">
     <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速篩選下方型號..." onkeyup="filterItems()">
   </div>
 
-  <!-- 橫向類別導航 -->
   <div class="category-scroll" id="category-tabs"></div>
 
-  <!-- 物料列表區 -->
   <div class="item-container" id="item-list">
-    <div class="loader">⏳ 正在載入雲端材料清單...</div>
+    <div class="loader">⏳ 正在同步雲端資料...</div>
   </div>
 
-  <!-- 🌟 新增：找不到結果的提示 -->
   <div class="no-result" id="no-result">該類別沒有符合的型號</div>
   
-  <!-- 底部懸浮購物車 -->
   <div class="bottom-bar">
     <div class="cart-info">
       🛒 已選物料 <span class="cart-badge" id="cart-badge">0</span>
@@ -97,7 +83,6 @@
     <button class="view-cart-btn" onclick="openCart()">查看清單</button>
   </div>
 
-  <!-- 購物車確認視窗 -->
   <div class="modal-overlay" id="cart-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -112,15 +97,18 @@
   <script>
     const LIFF_ID = "2011068238-PFTKKAEP"; 
     const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
-    const SHEET_NAME = encodeURIComponent('材料清單');
     
     let isLiffInit = false;
     let materialsData = {}; 
-    let cart = {}; 
     let currentCategory = ""; 
+    let cart = {}; 
+    
+    // 🌟 存放動態抓取的名單
+    let contractorList = [];
+    let staffList = [];
 
     document.addEventListener("DOMContentLoaded", () => {
-      fetchMaterials();
+      initData();
 
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("逾時")), 10000));
       Promise.race([ liff.init({ liffId: LIFF_ID }), timeoutPromise ])
@@ -136,42 +124,59 @@
       });
     });
 
-    function fetchMaterials() {
-      const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
+    // 🌟 核心升級：同時抓取三份資料 (材料清單、包商名單、員工名單)
+    function initData() {
+      const urlMaterials = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('材料清單')}&t=${new Date().getTime()}`;
+      const urlContractors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('包商名單')}&t=${new Date().getTime()}`;
+      const urlStaffs = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('員工名單')}&t=${new Date().getTime()}`;
 
-      fetch(gvizUrl)
-        .then(response => response.text())
-        .then(text => {
-          const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-          if (!match || !match[1]) throw new Error("資料格式解析失敗");
+      Promise.all([
+        fetch(urlMaterials).then(res => res.text()),
+        fetch(urlContractors).then(res => res.text()),
+        fetch(urlStaffs).then(res => res.text())
+      ])
+      .then(results => {
+        // 1. 解析材料清單
+        const matMatch = results[0].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        const matData = JSON.parse(matMatch[1]);
+        materialsData = {};
+        matData.table.rows.forEach(row => {
+          if (!row.c) return;
+          const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
+          const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
+          const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
+          if (!cat || !model || cat === "大類別") return; 
 
-          const rawData = JSON.parse(match[1]);
-          materialsData = {};
-
-          rawData.table.rows.forEach(row => {
-            if (!row.c) return;
-            // 🌟 全部加上 .toUpperCase() 強制轉大寫
-            const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
-            const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
-            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
-
-            if (!cat || !model || cat === "大類別") return; 
-
-            if (cat === "單體") {
-              if (!materialsData[cat]) materialsData[cat] = {};
-              if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
-              materialsData[cat][freq].push(model);
-            } else {
-              if (!materialsData[cat]) materialsData[cat] = [];
-              materialsData[cat].push(model);
-            }
-          });
-
-          renderCategoryTabs();
-        })
-        .catch(err => {
-          document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料載入失敗: ${err.message}</div>`;
+          if (cat === "單體") {
+            if (!materialsData[cat]) materialsData[cat] = {};
+            if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
+            materialsData[cat][freq].push(model);
+          } else {
+            if (!materialsData[cat]) materialsData[cat] = [];
+            materialsData[cat].push(model);
+          }
         });
+        renderCategoryTabs();
+
+        // 2. 解析包商名單 (第一欄)
+        const conMatch = results[1].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        JSON.parse(conMatch[1]).table.rows.forEach(row => {
+          if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "包商名稱") {
+             contractorList.push(row.c[0].v.toString().trim());
+          }
+        });
+
+        // 3. 解析員工名單 (第一欄)
+        const staffMatch = results[2].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        JSON.parse(staffMatch[1]).table.rows.forEach(row => {
+          if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "員工姓名" && row.c[0].v !== "張景閔") {
+             staffList.push(row.c[0].v.toString().trim());
+          }
+        });
+      })
+      .catch(err => {
+        document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料同步失敗，請重整畫面: ${err.message}</div>`;
+      });
     }
 
     function renderCategoryTabs() {
@@ -197,7 +202,6 @@
       btnElement.classList.add('active');
       btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       
-      // 🌟 新增：切換類別時自動清空搜尋框
       const searchInput = document.getElementById("searchInput");
       if (searchInput) searchInput.value = "";
       const noResultElem = document.getElementById("no-result");
@@ -205,6 +209,7 @@
 
       renderItems(category);
     }
+
     function renderItems(category) {
       const listContainer = document.getElementById("item-list");
       listContainer.innerHTML = "";
@@ -223,7 +228,6 @@
       }
     }
 
-    // 🌟 升級版：使用 encodeURIComponent 確保引號不出錯，並加入 input 手動輸入功能
     function createItemCard(model, categoryName = "") {
       const encodedModel = encodeURIComponent(model);
       const currentQty = cart[model] || 0;
@@ -231,7 +235,6 @@
       let card = document.createElement("div");
       card.className = "item-card";
 
-      // 🌟 判斷是否為全域搜尋，如果是，就在型號底下多顯示一行「所屬分類」
       let nameHtml = `<div class="item-name">${model}</div>`;
       if (categoryName) {
         nameHtml = `<div class="item-name" style="flex:1; line-height: 1.4;">
@@ -250,12 +253,7 @@
       `;
       return card;
     }
-
-    // ==========================================
-    // 3. 購物車邏輯 (按鈕加減 & 手動輸入)
-    // ==========================================
     
-    // 透過按鈕增減
     function updateCart(encodedModel, change) {
       const model = decodeURIComponent(encodedModel);
       if (!cart[model]) cart[model] = 0;
@@ -265,49 +263,39 @@
       syncCartUI(model, encodedModel);
     }
 
-    // 透過輸入框手動更改
     function manualUpdateCart(encodedModel, value) {
       const model = decodeURIComponent(encodedModel);
       let num = parseInt(value, 10);
-      if (isNaN(num) || num < 0) num = 0; // 防呆：如果輸入負數或亂打，自動歸零
+      if (isNaN(num) || num < 0) num = 0; 
       cart[model] = num;
       
       syncCartUI(model, encodedModel);
     }
 
-    // Modal 裡的增減 (減到零會重整清單)
     function updateCartInModal(encodedModel, change) {
       updateCart(encodedModel, change);
       const model = decodeURIComponent(encodedModel);
       if (!cart[model]) openCart();
     }
 
-    // Modal 裡的手動更改 (改到零會重整清單)
     function manualUpdateCartInModal(encodedModel, value) {
       manualUpdateCart(encodedModel, value);
       const model = decodeURIComponent(encodedModel);
       if (!cart[model]) openCart();
     }
 
-    // 同步畫面上的所有數字
     function syncCartUI(model, encodedModel) {
       if (cart[model] === 0) delete cart[model];
       
       let qty = cart[model] || 0;
-
-      // 更新主畫面的輸入框
       const displayElem = document.getElementById(`qty-${encodedModel}`);
       if (displayElem) displayElem.value = qty;
-
-      // 更新購物車清單的輸入框
       const modalQtyElem = document.getElementById(`modal-qty-${encodedModel}`);
       if (modalQtyElem) modalQtyElem.value = qty;
       
-      // 更新底部徽章總數
       document.getElementById("cart-badge").innerText = Object.keys(cart).length;
     }
 
-    // 打開購物車彈窗
     function openCart() {
       const itemsContainer = document.getElementById("cart-items");
       itemsContainer.innerHTML = "";
@@ -328,13 +316,32 @@
         `;
       }
 
-      if (!hasItems) {
+      // 🌟 新增：在購物車清單最下方加入包商與發料人選擇區塊
+      if (hasItems) {
+        let optionsHtml = `<div style="margin-top:20px; padding-top:15px; border-top:2px dashed #eee;">
+          <div style="margin-bottom:10px;">
+            <label style="font-weight:bold; font-size:14px; color:#555;">👷🏻 本次施工包商：</label>
+            <select id="select-contractor" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
+              <option value="">-- 請選擇包商 --</option>
+              ${contractorList.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:bold; font-size:14px; color:#555;">👤 現場發料人員：</label>
+            <select id="select-staff" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
+              <option value="">-- 請選擇人員 --</option>
+              ${staffList.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>`;
+        itemsContainer.innerHTML += optionsHtml;
+
+        document.getElementById("submit-btn").style.background = "#06C755";
+        document.getElementById("submit-btn").disabled = false;
+      } else {
         itemsContainer.innerHTML = "<div style='text-align:center; color:#888; padding: 20px;'>購物車目前是空的喔！</div>";
         document.getElementById("submit-btn").style.background = "#ccc";
         document.getElementById("submit-btn").disabled = true;
-      } else {
-        document.getElementById("submit-btn").style.background = "#06C755";
-        document.getElementById("submit-btn").disabled = false;
       }
 
       document.getElementById("cart-modal").style.display = "flex";
@@ -342,26 +349,32 @@
 
     function closeCart() {
       document.getElementById("cart-modal").style.display = "none";
-      renderItems(currentCategory); // 關閉時重新渲染，確保所有數字是最新的
+      renderItems(currentCategory); 
     }
 
-    // ==========================================
-    // 4. 送出至 LINE 聊天室
-    // ==========================================
     function submitToLine() {
       if(!isLiffInit || (!liff.isInClient() && !liff.isLoggedIn())) {
          return alert("LIFF 尚未就緒或未登入，請關閉後重新開啟。");
       }
       
+      // 🌟 檢查是否有選擇人員與包商
+      const contractor = document.getElementById("select-contractor").value;
+      const staff = document.getElementById("select-staff").value;
+      if (!contractor || !staff) {
+        return alert("⚠️ 送出失敗：請先選擇「包商」與「發料人員」！");
+      }
+
+      // 🌟 將選定的資訊轉化成 #標籤格式，放在訊息最上方讓系統解析
       let messageLines = [];
+      messageLines.push(`#包商:${contractor}`);
+      messageLines.push(`#發料人:${staff}`);
+
       for (const model in cart) {
         if (cart[model] > 0) {
           messageLines.push(`${model} ${cart[model]}`);
         }
       }
 
-      if (messageLines.length === 0) return alert("清單是空的！");
-      
       document.getElementById("submit-btn").innerText = "⏳ 傳送中...";
       let messageText = messageLines.join("\n");
 
@@ -373,14 +386,13 @@
         document.getElementById("submit-btn").innerText = "✅ 確認送出給系統";
       });
     }
-    // 🌟 新增：本地快速篩選功能
+
     function filterItems() {
       const input = document.getElementById("searchInput").value.trim().toUpperCase();
       const listContainer = document.getElementById("item-list");
       const tabsContainer = document.getElementById("category-tabs");
       const noResultElem = document.getElementById("no-result");
 
-      // 1. 若清空搜尋框，恢復「單一分類瀏覽模式」
       if (input === "") {
         tabsContainer.style.display = "flex";
         noResultElem.style.display = "none";
@@ -388,29 +400,25 @@
         return;
       }
 
-      // 2. 進入「全域搜尋模式」：隱藏上方的橫向分類列，清空目前畫面
       tabsContainer.style.display = "none";
       listContainer.innerHTML = "";
       let visibleCount = 0;
 
-      // 3. 跨類別掃描全庫存資料 (materialsData)
       for (const cat in materialsData) {
         const categoryData = materialsData[cat];
 
         if (Array.isArray(categoryData)) {
-          // 一般類別陣列
           categoryData.forEach(model => {
             if (model.toUpperCase().indexOf(input) > -1) {
-              listContainer.appendChild(createItemCard(model, cat)); // 傳入類別名稱以供顯示
+              listContainer.appendChild(createItemCard(model, cat)); 
               visibleCount++;
             }
           });
         } else {
-          // 處理「單體」這種帶有子頻率的特殊物件
           for (const freq in categoryData) {
             categoryData[freq].forEach(model => {
               if (model.toUpperCase().indexOf(input) > -1) {
-                listContainer.appendChild(createItemCard(model, cat)); // 傳入類別名稱以供顯示
+                listContainer.appendChild(createItemCard(model, cat)); 
                 visibleCount++;
               }
             });
@@ -418,7 +426,6 @@
         }
       }
 
-      // 4. 更新找不到結果的提示文字
       if (noResultElem) {
         noResultElem.style.display = visibleCount === 0 ? "block" : "none";
         noResultElem.innerText = "全庫存中找不到符合的型號";
