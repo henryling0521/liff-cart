@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>系統升級公告</title>
+  <style>
+    :root {
+      --primary: #06C755; 
+      --bg: #f5f6f8;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text-main); padding-bottom: 30px;}
+    
+    header { background: var(--primary); color: white; padding: 25px 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;}
+    .header-title { font-size: 22px; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px;}
+    .header-version { font-size: 14px; background: rgba(255,255,255,0.2); display: inline-block; padding: 4px 12px; border-radius: 15px; }
+
+    .content-container { padding: 20px; }
+    
+    .update-card { background: var(--card-bg); border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-left: 5px solid var(--primary); }
+    .update-title { font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; }
+    .update-title span { margin-right: 8px; font-size: 22px; }
+    
+    .feature-list { list-style: none; padding: 0; margin: 0; }
+    .feature-list li { position: relative; padding-left: 20px; margin-bottom: 12px; font-size: 15px; line-height: 1.5; color: #555; }
+    .feature-list li::before { content: "✨"; position: absolute; left: 0; top: 0; font-size: 12px; line-height: 1.5; }
+    .highlight { font-weight: bold; color: #333; }
+
+    .close-btn-container { text-align: center; margin-top: 30px; }
+    .close-btn { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(6,199,85,0.3); transition: 0.2s; }
+    .close-btn:active { transform: scale(0.95); }
+    
+    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #aaa; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">🚀 系統全面大改版</div>
+    <div class="header-version">Version 2.0 (最新升級)</div>
+  </header>
+
+  <div class="content-container">
+    
+    <!-- 卡片 1：購物車升級 -->
+    <div class="update-card">
+      <div class="update-title"><span>🛒</span> 批次領退料購物車</div>
+      <ul class="feature-list">
+        <li><span class="highlight">一站式流暢體驗：</span>現在點選領料後「秒開購物車」，並可直接於結帳畫面選擇【包商】與【發料人】，免去 LINE 機器人反覆問答。</li>
+        <li><span class="highlight">內建智慧搜尋：</span>購物車上方新增「快速搜尋列」，打字即可秒找全庫存物料，免切換類別。</li>
+        <li><span class="highlight">精準庫存保留：</span>若遇庫存不足，系統只會剔除超出的數量，完美保留已選好的其他物料。</li>
+      </ul>
+    </div>
+
+    <!-- 卡片 2：查詢系統升級 -->
+    <div class="update-card">
+      <div class="update-title"><span>🔍</span> 即時庫存與紀錄查詢</div>
+      <ul class="feature-list">
+        <li><span class="highlight">極速網頁架構：</span>查詢系統已轉移至全新架構，擺脫 Google 安全警告，速度提升 300%。</li>
+        <li><span class="highlight">全域歷史搜尋：</span>點擊右上角，可直接搜尋「包商、站台、型號、發料人」，所有紀錄無所遁形。</li>
+        <li><span class="highlight">PDF 單據直連：</span>歷史紀錄表格內如有產出單據，將顯示「📄」圖示，點擊該列即可直接開啟 PDF 領退料單。</li>
+      </ul>
+    </div>
+
+    <!-- 卡片 3：底層邏輯優化 -->
+    <div class="update-card">
+      <div class="update-title"><span>⚙️</span> 系統核心優化</div>
+      <ul class="feature-list">
+        <li><span class="highlight">多包商自動分流：</span>同一台購物車混選多家包商結帳時，系統會自動拆單，派發多張獨立簽名連結與單據。</li>
+        <li><span class="highlight">無差別大小寫：</span>系統全面支援大小寫模糊比對，不管輸入大寫小寫都能精準抓到料號。</li>
+        <li><span class="highlight">自動記憶發料人：</span>系統會自動記憶您上一次選擇的發料人，開啟購物車時預先選好。</li>
+      </ul>
+    </div>
+
+    <div class="close-btn-container">
+      <button class="close-btn" onclick="closeWindow()">我知道了，開始使用</button>
+    </div>
+
+    <div class="footer">
+      Powered by 屏北倉庫管理系統
+    </div>
+  </div>
+
+  <script>
+    // 判斷是否在 LIFF 環境中，若有引入 LIFF SDK 則調用 closeWindow
+    function closeWindow() {
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        // 一般瀏覽器關閉方式或返回上一頁
+        window.close();
+        if(!window.closed) { window.history.back(); }
+      }
+    }
+  </script>
+</body>
+</html>
