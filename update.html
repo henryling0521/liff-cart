@@ -74,26 +74,13 @@
       </ul>
     </div>
 
-    <div class="close-btn-container">
-      <button class="close-btn" onclick="closeWindow()">我知道了，開始使用</button>
-    </div>
+    
 
     <div class="footer">
       Powered by 屏北倉庫管理系統
     </div>
   </div>
 
-  <script>
-    // 判斷是否在 LIFF 環境中，若有引入 LIFF SDK 則調用 closeWindow
-    function closeWindow() {
-      if (typeof liff !== 'undefined' && liff.isInClient()) {
-        liff.closeWindow();
-      } else {
-        // 一般瀏覽器關閉方式或返回上一頁
-        window.close();
-        if(!window.closed) { window.history.back(); }
-      }
-    }
-  </script>
+  
 </body>
 </html>
