@@ -318,6 +318,10 @@
 
       // 🌟 新增：在購物車清單最下方加入包商與發料人選擇區塊
       if (hasItems) {
+        // 🌟 讀取 GAS 傳遞過來的預設發料人
+        const urlParams = new URLSearchParams(window.location.search);
+        const defaultStaff = urlParams.get('staff') || "";
+        
         let optionsHtml = `<div style="margin-top:20px; padding-top:15px; border-top:2px dashed #eee;">
           <div style="margin-bottom:10px;">
             <label style="font-weight:bold; font-size:14px; color:#555;">👷🏻 本次施工包商：</label>
@@ -330,7 +334,7 @@
             <label style="font-weight:bold; font-size:14px; color:#555;">👤 現場發料人員：</label>
             <select id="select-staff" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
               <option value="">-- 請選擇人員 --</option>
-              ${staffList.map(s => `<option value="${s}">${s}</option>`).join('')}
+              ${staffList.map(s => `<option value="${s}" ${s === defaultStaff ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
           </div>
         </div>`;
