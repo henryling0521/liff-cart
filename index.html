@@ -140,25 +140,34 @@
         const matMatch = results[0].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
         const matData = JSON.parse(matMatch[1]);
         materialsData = {};
+        
         matData.table.rows.forEach(row => {
-          if (!row.c) return;
+          if (!row.c || row.c.length === 0) return;
+          
           const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
-          const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
-          const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
-          if (!cat || !model || cat === "大類別") return; 
+          if (!cat || cat === "大類別") return; 
 
           if (cat === "單體") {
+            // 單體：B欄是頻率([1])，C欄是型號([2])
+            const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
+            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
+            if (!model) return;
+
             if (!materialsData[cat]) materialsData[cat] = {};
             if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
             materialsData[cat][freq].push(model);
           } else {
+            // 其他類別：B欄空白，型號固定在 C欄([2])
+            const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
+            if (!model) return;
+
             if (!materialsData[cat]) materialsData[cat] = [];
             materialsData[cat].push(model);
           }
         });
         renderCategoryTabs();
 
-        // 2. 解析包商名單 (第一欄)
+        // 2. 解析包商名單
         const conMatch = results[1].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
         JSON.parse(conMatch[1]).table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "包商名稱") {
@@ -166,7 +175,7 @@
           }
         });
 
-        // 3. 解析員工名單 (第一欄)
+        // 3. 解析員工名單
         const staffMatch = results[2].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
         JSON.parse(staffMatch[1]).table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "員工姓名" && row.c[0].v !== "張景閔") {
