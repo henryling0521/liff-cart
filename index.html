@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>批次領退料系統</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- 🌟 新增：載入相機掃描套件 -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     :root {
       --primary: #06C755; 
@@ -18,9 +20,11 @@
     header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
     #status-box { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-weight: normal; }
 
-    .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; }
-    .search-input { width: 100%; padding: 10px 15px; font-size: 14px; border: 1px solid #ddd; border-radius: 20px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s;}
+    /* 🌟 修改：加入相機掃描鈕的排版 */
+    .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+    .search-input { flex: 1; padding: 10px 15px; font-size: 14px; border: 1px solid #ddd; border-radius: 20px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s;}
     .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
+    .scan-btn { background: var(--primary); color: white; border: none; border-radius: 20px; padding: 0 15px; height: 38px; margin-left: 10px; cursor: pointer; font-size: 18px; box-shadow: 0 2px 5px rgba(6,199,85,0.3); display: flex; align-items: center;}
 
     .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 110px; z-index: 98; }
     .category-scroll::-webkit-scrollbar { display: none; } 
@@ -49,7 +53,7 @@
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
     .modal-title { font-size: 18px; font-weight: bold; }
-    .close-btn { background: none; border: none; font-size: 24px; color: #888; }
+    .close-btn { background: none; border: none; font-size: 24px; color: #888; cursor: pointer; padding: 0;}
     .modal-body { overflow-y: auto; flex: 1; margin-bottom: 15px; padding-right: 5px;}
     .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
     .submit-btn { background: var(--primary); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
@@ -64,8 +68,10 @@
     <div id="status-box">LIFF 系統初始化中...</div>
   </header>
 
+  <!-- 🌟 修改：加入相機掃描鈕 -->
   <div class="search-container">
     <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速篩選下方型號..." onkeyup="filterItems()">
+    <button class="scan-btn" onclick="startScanner()" title="掃描條碼">📷</button>
   </div>
 
   <div class="category-scroll" id="category-tabs"></div>
@@ -94,6 +100,18 @@
     </div>
   </div>
 
+  <!-- 🌟 新增：相機掃描視窗 (Modal) -->
+  <div class="modal-overlay" id="scanner-modal" style="z-index: 3000;">
+    <div class="modal-content" style="height: 75vh;">
+      <div class="modal-header">
+        <div class="modal-title">📷 掃描料架條碼</div>
+        <button class="close-btn" onclick="stopScanner()">×</button>
+      </div>
+      <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 15px;"></div>
+      <div id="scan-result" style="text-align:center; padding: 10px; font-size: 16px; font-weight: bold; height: 30px;"></div>
+    </div>
+  </div>
+
   <script>
     const LIFF_ID = "2011068238-PFTKKAEP"; 
     const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
@@ -103,7 +121,6 @@
     let currentCategory = ""; 
     let cart = {}; 
     
-    // 🌟 存放動態抓取的名單
     let contractorList = [];
     let staffList = [];
 
@@ -124,7 +141,15 @@
       });
     });
 
-    // 🌟 核心升級：同時抓取三份資料 (材料清單、包商名單、員工名單)
+    // 🌟 強化版資料解析：預防卡死
+    function parseGVizData(text, sheetName) {
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+      if (!match || !match[1]) throw new Error(`無法解析「${sheetName}」，請確認工作表是否存在。`);
+      const data = JSON.parse(match[1]);
+      if (data.status === 'error') throw new Error(`讀取「${sheetName}」失敗: ` + data.errors[0].message);
+      return data;
+    }
+
     function initData() {
       const urlMaterials = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('材料清單')}&t=${new Date().getTime()}`;
       const urlContractors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('包商名單')}&t=${new Date().getTime()}`;
@@ -137,8 +162,7 @@
       ])
       .then(results => {
         // 1. 解析材料清單
-        const matMatch = results[0].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-        const matData = JSON.parse(matMatch[1]);
+        const matData = parseGVizData(results[0], '材料清單');
         materialsData = {};
         matData.table.rows.forEach(row => {
           if (!row.c) return;
@@ -158,24 +182,26 @@
         });
         renderCategoryTabs();
 
-        // 2. 解析包商名單 (第一欄)
-        const conMatch = results[1].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-        JSON.parse(conMatch[1]).table.rows.forEach(row => {
+        // 2. 解析包商名單
+        const conData = parseGVizData(results[1], '包商名單');
+        conData.table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "包商名稱") {
              contractorList.push(row.c[0].v.toString().trim());
           }
         });
 
-        // 3. 解析員工名單 (第一欄)
-        const staffMatch = results[2].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-        JSON.parse(staffMatch[1]).table.rows.forEach(row => {
+        // 3. 解析員工名單
+        const staffData = parseGVizData(results[2], '員工名單');
+        staffData.table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "員工姓名" && row.c[0].v !== "張景閔") {
              staffList.push(row.c[0].v.toString().trim());
           }
         });
       })
       .catch(err => {
-        document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料同步失敗，請重整畫面: ${err.message}</div>`;
+        console.error(err);
+        // 🌟 這裡能明確告訴你是哪裡出錯，不會再默默卡死
+        document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red; font-size:14px; line-height:1.5;">❌ <b>資料同步失敗</b><br><br>${err.message}<br><br>請確認您的試算表名稱是否完全吻合。</div>`;
       });
     }
 
@@ -316,9 +342,7 @@
         `;
       }
 
-      // 🌟 新增：在購物車清單最下方加入包商與發料人選擇區塊
       if (hasItems) {
-        // 🌟 讀取 GAS 傳遞過來的預設發料人
         const urlParams = new URLSearchParams(window.location.search);
         const defaultStaff = urlParams.get('staff') || "";
         
@@ -361,14 +385,12 @@
          return alert("LIFF 尚未就緒或未登入，請關閉後重新開啟。");
       }
       
-      // 🌟 檢查是否有選擇人員與包商
       const contractor = document.getElementById("select-contractor").value;
       const staff = document.getElementById("select-staff").value;
       if (!contractor || !staff) {
         return alert("⚠️ 送出失敗：請先選擇「包商」與「發料人員」！");
       }
 
-      // 🌟 將選定的資訊轉化成 #標籤格式，放在訊息最上方讓系統解析
       let messageLines = [];
       messageLines.push(`#包商:${contractor}`);
       messageLines.push(`#發料人:${staff}`);
@@ -434,6 +456,75 @@
         noResultElem.style.display = visibleCount === 0 ? "block" : "none";
         noResultElem.innerText = "全庫存中找不到符合的型號";
       }
+    }
+
+    // ==========================================
+    // 🌟 掃描器邏輯 (HTML5 QR Code)
+    // ==========================================
+    let html5QrCode;
+
+    function startScanner() {
+      document.getElementById('scanner-modal').style.display = 'flex';
+      document.getElementById('scan-result').innerHTML = "請將鏡頭對準料架 QR Code / 條碼";
+      document.getElementById('scan-result').style.color = "#888";
+
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+      .catch(err => {
+        alert("相機啟動失敗，請確認是否已在 LINE 或瀏覽器中允許相機權限！");
+        stopScanner();
+      });
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          document.getElementById('scanner-modal').style.display = 'none';
+        }).catch(err => {
+          document.getElementById('scanner-modal').style.display = 'none';
+        });
+      } else {
+        document.getElementById('scanner-modal').style.display = 'none';
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      html5QrCode.pause();
+      
+      let safeModel = decodedText.trim().toUpperCase();
+      let isFound = false;
+
+      for (const cat in materialsData) {
+        if (Array.isArray(materialsData[cat])) {
+          if (materialsData[cat].includes(safeModel)) isFound = true;
+        } else {
+           for (const freq in materialsData[cat]) {
+             if (materialsData[cat][freq].includes(safeModel)) isFound = true;
+           }
+        }
+      }
+
+      const resultDiv = document.getElementById("scan-result");
+
+      if (isFound) {
+        updateCart(encodeURIComponent(safeModel), 1);
+        resultDiv.innerHTML = `✅ 已將【${safeModel}】加 1`;
+        resultDiv.style.color = "#06C755";
+        
+        document.getElementById("searchInput").value = safeModel;
+        filterItems();
+      } else {
+        resultDiv.innerHTML = `❌ 查無此料號：${safeModel}`;
+        resultDiv.style.color = "#ff3b30";
+      }
+      
+      setTimeout(() => {
+         resultDiv.innerHTML = "繼續掃描下一個...";
+         resultDiv.style.color = "#888";
+         html5QrCode.resume();
+      }, 1500);
     }
   </script>
 </body>
