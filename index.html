@@ -1,880 +1,440 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-
   <title>批次領退料系統</title>
-
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
-
     :root {
-
       --primary: #06C755; 
-
       --bg: #f5f6f8;
-
       --card-bg: #ffffff;
-
       --text-main: #333333;
-
       --text-muted: #888888;
-
     }
-
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg); color: var(--text-main); padding-bottom: 80px; }
-
     
-
     header { background: #fff; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-
     #status-box { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-weight: normal; }
 
-
-
     .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 55px; z-index: 99; border-bottom: 1px solid #eee; }
-
     .search-input { width: 100%; padding: 10px 15px; font-size: 14px; border: 1px solid #ddd; border-radius: 20px; box-sizing: border-box; outline: none; background: #f9f9f9; transition: 0.3s;}
-
     .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
 
-
-
     .category-scroll { display: flex; overflow-x: auto; white-space: nowrap; background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; position: sticky; top: 110px; z-index: 98; }
-
     .category-scroll::-webkit-scrollbar { display: none; } 
-
     .cat-tab { padding: 8px 16px; margin-right: 10px; background: #eee; border-radius: 20px; font-size: 14px; color: #555; border: none; outline: none; cursor: pointer; transition: 0.3s; }
-
     .cat-tab.active { background: var(--primary); color: #fff; font-weight: bold; box-shadow: 0 2px 8px rgba(6, 199, 85, 0.4); }
 
-
-
     .no-result { text-align: center; padding: 20px; color: #888; display: none; }
-
     .item-container { padding: 15px; }
-
     .freq-header { font-size: 13px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-left: 4px solid var(--primary); padding-left: 8px; }
-
     .item-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-
     .item-name { font-size: 15px; font-weight: 500; word-break: break-all; padding-right: 10px; flex: 1; }
-
     
-
     .qty-control { display: flex; align-items: center; background: #f0f0f0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
-
     .qty-btn { width: 42px; height: 42px; border: none; background: #f0f0f0; font-size: 24px; color: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.1s; padding-bottom: 2px; }
-
     .qty-btn:active { background: #e0e0e0; }
-
     .qty-input { width: 50px; height: 42px; text-align: center; font-size: 16px; font-weight: bold; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd; background: #fff; outline: none; -moz-appearance: textfield; padding: 0; color: #333; }
-
     .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-
-
     .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 1000; }
-
     .cart-info { font-size: 16px; font-weight: bold; display: flex; align-items: center; }
-
     .cart-badge { background: #ff3b30; color: white; border-radius: 50%; padding: 2px 8px; font-size: 14px; margin-left: 8px; }
-
     .view-cart-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; }
 
-
-
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
-
     .modal-content { background: #fff; width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
-
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
-
     .modal-title { font-size: 18px; font-weight: bold; }
-
     .close-btn { background: none; border: none; font-size: 24px; color: #888; }
-
     .modal-body { overflow-y: auto; flex: 1; margin-bottom: 15px; padding-right: 5px;}
-
     .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px; }
-
     .submit-btn { background: var(--primary); color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
 
-
-
     .loader { text-align: center; padding: 40px 20px; color: #888; }
-
   </style>
-
 </head>
-
 <body>
 
-
-
   <header>
-
     📦 領退料系統
-
     <div id="status-box">LIFF 系統初始化中...</div>
-
   </header>
 
-
-
   <div class="search-container">
-
     <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速篩選下方型號..." onkeyup="filterItems()">
-
   </div>
-
-
 
   <div class="category-scroll" id="category-tabs"></div>
 
-
-
   <div class="item-container" id="item-list">
-
     <div class="loader">⏳ 正在同步雲端資料...</div>
-
   </div>
-
-
 
   <div class="no-result" id="no-result">該類別沒有符合的型號</div>
-
   
-
   <div class="bottom-bar">
-
     <div class="cart-info">
-
       🛒 已選物料 <span class="cart-badge" id="cart-badge">0</span>
-
     </div>
-
     <button class="view-cart-btn" onclick="openCart()">查看清單</button>
-
   </div>
-
-
 
   <div class="modal-overlay" id="cart-modal">
-
     <div class="modal-content">
-
       <div class="modal-header">
-
         <div class="modal-title">📋 已選清單確認</div>
-
         <button class="close-btn" onclick="closeCart()">×</button>
-
       </div>
-
       <div class="modal-body" id="cart-items"></div>
-
       <button class="submit-btn" id="submit-btn" onclick="submitToLine()">✅ 確認送出給系統</button>
-
     </div>
-
   </div>
 
-
-
   <script>
-
     const LIFF_ID = "2011068238-PFTKKAEP"; 
-
     const SHEET_ID = '1tSsV48Wdv1orCoLnAfi0m37XjQf86MmUbOY_fpX9mik';
-
     
-
     let isLiffInit = false;
-
     let materialsData = {}; 
-
     let currentCategory = ""; 
-
     let cart = {}; 
-
     
-
     // 🌟 存放動態抓取的名單
-
     let contractorList = [];
-
     let staffList = [];
 
-
-
     document.addEventListener("DOMContentLoaded", () => {
-
       initData();
 
-
-
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("逾時")), 10000));
-
       Promise.race([ liff.init({ liffId: LIFF_ID }), timeoutPromise ])
-
       .then(() => {
-
         isLiffInit = true;
-
         if (!liff.isInClient() && !liff.isLoggedIn()) {
-
           document.getElementById("status-box").innerHTML = `⚠️ <span style="color:red;" onclick="window.top.location.href='https://liff.line.me/${LIFF_ID}'">點此進行 LINE 授權</span>`;
-
         } else {
-
           document.getElementById("status-box").innerHTML = "✅ 系統連線就緒";
-
         }
-
       }).catch(() => {
-
         document.getElementById("status-box").innerHTML = `⚠️ <span style="color:red;" onclick="window.top.location.href='https://liff.line.me/${LIFF_ID}'">點此進行 LINE 授權</span>`;
-
       });
-
     });
 
-
-
     // 🌟 核心升級：同時抓取三份資料 (材料清單、包商名單、員工名單)
-
     function initData() {
-
       const urlMaterials = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('材料清單')}&t=${new Date().getTime()}`;
-
       const urlContractors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('包商名單')}&t=${new Date().getTime()}`;
-
       const urlStaffs = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('員工名單')}&t=${new Date().getTime()}`;
 
-
-
       Promise.all([
-
         fetch(urlMaterials).then(res => res.text()),
-
         fetch(urlContractors).then(res => res.text()),
-
         fetch(urlStaffs).then(res => res.text())
-
       ])
-
       .then(results => {
-
         // 1. 解析材料清單
-
         const matMatch = results[0].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-
         const matData = JSON.parse(matMatch[1]);
-
         materialsData = {};
-
         matData.table.rows.forEach(row => {
-
           if (!row.c) return;
-
           const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
-
           const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
-
           const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
-
           if (!cat || !model || cat === "大類別") return; 
 
-
-
           if (cat === "單體") {
-
             if (!materialsData[cat]) materialsData[cat] = {};
-
             if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
-
             materialsData[cat][freq].push(model);
-
           } else {
-
             if (!materialsData[cat]) materialsData[cat] = [];
-
             materialsData[cat].push(model);
-
           }
-
         });
-
         renderCategoryTabs();
 
-
-
         // 2. 解析包商名單 (第一欄)
-
         const conMatch = results[1].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-
         JSON.parse(conMatch[1]).table.rows.forEach(row => {
-
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "包商名稱") {
-
              contractorList.push(row.c[0].v.toString().trim());
-
           }
-
         });
-
-
 
         // 3. 解析員工名單 (第一欄)
-
         const staffMatch = results[2].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-
         JSON.parse(staffMatch[1]).table.rows.forEach(row => {
-
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "員工姓名" && row.c[0].v !== "張景閔") {
-
              staffList.push(row.c[0].v.toString().trim());
-
           }
-
         });
-
       })
-
       .catch(err => {
-
         document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料同步失敗，請重整畫面: ${err.message}</div>`;
-
       });
-
     }
-
-
 
     function renderCategoryTabs() {
-
       const tabsContainer = document.getElementById("category-tabs");
-
       tabsContainer.innerHTML = "";
-
       
-
       let isFirst = true;
-
       for (const category in materialsData) {
-
         let btn = document.createElement("button");
-
         btn.className = "cat-tab";
-
         if (isFirst) { btn.classList.add("active"); currentCategory = category; isFirst = false; }
-
         btn.innerText = category;
-
         btn.onclick = () => selectCategory(category, btn);
-
         tabsContainer.appendChild(btn);
-
       }
-
       
-
       renderItems(currentCategory);
-
     }
-
-
 
     function selectCategory(category, btnElement) {
-
       currentCategory = category;
-
       document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-
       btnElement.classList.add('active');
-
       btnElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-
       
-
       const searchInput = document.getElementById("searchInput");
-
       if (searchInput) searchInput.value = "";
-
       const noResultElem = document.getElementById("no-result");
-
       if (noResultElem) noResultElem.style.display = "none";
 
-
-
       renderItems(category);
-
     }
-
-
 
     function renderItems(category) {
-
       const listContainer = document.getElementById("item-list");
-
       listContainer.innerHTML = "";
-
       const categoryData = materialsData[category];
 
-
-
       if (Array.isArray(categoryData)) {
-
         categoryData.forEach(model => listContainer.appendChild(createItemCard(model)));
-
       } else {
-
         for (const freq in categoryData) {
-
           let header = document.createElement("div");
-
           header.className = "freq-header";
-
           header.innerText = `【頻率: ${freq}】`;
-
           listContainer.appendChild(header);
-
           categoryData[freq].forEach(model => listContainer.appendChild(createItemCard(model)));
-
         }
-
       }
-
     }
-
-
 
     function createItemCard(model, categoryName = "") {
-
       const encodedModel = encodeURIComponent(model);
-
       const currentQty = cart[model] || 0;
-
       
-
       let card = document.createElement("div");
-
       card.className = "item-card";
 
-
-
       let nameHtml = `<div class="item-name">${model}</div>`;
-
       if (categoryName) {
-
         nameHtml = `<div class="item-name" style="flex:1; line-height: 1.4;">
-
                       ${model}<br>
-
                       <span style="font-size:11px; color:#888; font-weight:normal;">📦 類別：${categoryName}</span>
-
                     </div>`;
-
       }
-
-
 
       card.innerHTML = `
-
         ${nameHtml}
-
         <div class="qty-control">
-
           <button class="qty-btn" onclick="updateCart('${encodedModel}', -1)">-</button>
-
           <input type="number" class="qty-input" id="qty-${encodedModel}" value="${currentQty}" min="0" onchange="manualUpdateCart('${encodedModel}', this.value)" onfocus="this.select()">
-
           <button class="qty-btn" onclick="updateCart('${encodedModel}', 1)">+</button>
-
         </div>
-
       `;
-
       return card;
-
     }
-
     
-
     function updateCart(encodedModel, change) {
-
       const model = decodeURIComponent(encodedModel);
-
       if (!cart[model]) cart[model] = 0;
-
       cart[model] += change;
-
       if (cart[model] < 0) cart[model] = 0;
-
       
-
       syncCartUI(model, encodedModel);
-
     }
-
-
 
     function manualUpdateCart(encodedModel, value) {
-
       const model = decodeURIComponent(encodedModel);
-
       let num = parseInt(value, 10);
-
       if (isNaN(num) || num < 0) num = 0; 
-
       cart[model] = num;
-
       
-
       syncCartUI(model, encodedModel);
-
     }
-
-
 
     function updateCartInModal(encodedModel, change) {
-
       updateCart(encodedModel, change);
-
       const model = decodeURIComponent(encodedModel);
-
       if (!cart[model]) openCart();
-
     }
-
-
 
     function manualUpdateCartInModal(encodedModel, value) {
-
       manualUpdateCart(encodedModel, value);
-
       const model = decodeURIComponent(encodedModel);
-
       if (!cart[model]) openCart();
-
     }
-
-
 
     function syncCartUI(model, encodedModel) {
-
       if (cart[model] === 0) delete cart[model];
-
       
-
       let qty = cart[model] || 0;
-
       const displayElem = document.getElementById(`qty-${encodedModel}`);
-
       if (displayElem) displayElem.value = qty;
-
       const modalQtyElem = document.getElementById(`modal-qty-${encodedModel}`);
-
       if (modalQtyElem) modalQtyElem.value = qty;
-
       
-
       document.getElementById("cart-badge").innerText = Object.keys(cart).length;
-
     }
-
-
 
     function openCart() {
-
       const itemsContainer = document.getElementById("cart-items");
-
       itemsContainer.innerHTML = "";
-
       let hasItems = false;
 
-
-
       for (const model in cart) {
-
         hasItems = true;
-
         const encodedModel = encodeURIComponent(model);
-
         itemsContainer.innerHTML += `
-
           <div class="cart-item">
-
             <span style="flex:1; padding-right:10px; align-self:center;">${model}</span>
-
             <div class="qty-control" style="transform: scale(0.95);">
-
               <button class="qty-btn" onclick="updateCartInModal('${encodedModel}', -1)">-</button>
-
               <input type="number" class="qty-input" id="modal-qty-${encodedModel}" value="${cart[model]}" min="0" onchange="manualUpdateCartInModal('${encodedModel}', this.value)" onfocus="this.select()">
-
               <button class="qty-btn" onclick="updateCartInModal('${encodedModel}', 1)">+</button>
-
             </div>
-
           </div>
-
         `;
-
       }
-
-
 
       // 🌟 新增：在購物車清單最下方加入包商與發料人選擇區塊
-
       if (hasItems) {
-
         // 🌟 讀取 GAS 傳遞過來的預設發料人
-
         const urlParams = new URLSearchParams(window.location.search);
-
         const defaultStaff = urlParams.get('staff') || "";
-
         
-
         let optionsHtml = `<div style="margin-top:20px; padding-top:15px; border-top:2px dashed #eee;">
-
           <div style="margin-bottom:10px;">
-
             <label style="font-weight:bold; font-size:14px; color:#555;">👷🏻 本次施工包商：</label>
-
             <select id="select-contractor" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
-
               <option value="">-- 請選擇包商 --</option>
-
               ${contractorList.map(c => `<option value="${c}">${c}</option>`).join('')}
-
             </select>
-
           </div>
-
           <div>
-
             <label style="font-weight:bold; font-size:14px; color:#555;">👤 現場發料人員：</label>
-
             <select id="select-staff" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
-
               <option value="">-- 請選擇人員 --</option>
-
               ${staffList.map(s => `<option value="${s}" ${s === defaultStaff ? 'selected' : ''}>${s}</option>`).join('')}
-
             </select>
-
           </div>
-
         </div>`;
-
         itemsContainer.innerHTML += optionsHtml;
 
-
-
         document.getElementById("submit-btn").style.background = "#06C755";
-
         document.getElementById("submit-btn").disabled = false;
-
       } else {
-
         itemsContainer.innerHTML = "<div style='text-align:center; color:#888; padding: 20px;'>購物車目前是空的喔！</div>";
-
         document.getElementById("submit-btn").style.background = "#ccc";
-
         document.getElementById("submit-btn").disabled = true;
-
       }
-
-
 
       document.getElementById("cart-modal").style.display = "flex";
-
     }
-
-
 
     function closeCart() {
-
       document.getElementById("cart-modal").style.display = "none";
-
       renderItems(currentCategory); 
-
     }
-
-
 
     function submitToLine() {
-
       if(!isLiffInit || (!liff.isInClient() && !liff.isLoggedIn())) {
-
          return alert("LIFF 尚未就緒或未登入，請關閉後重新開啟。");
-
       }
-
       
-
       // 🌟 檢查是否有選擇人員與包商
-
       const contractor = document.getElementById("select-contractor").value;
-
       const staff = document.getElementById("select-staff").value;
-
       if (!contractor || !staff) {
-
         return alert("⚠️ 送出失敗：請先選擇「包商」與「發料人員」！");
-
       }
-
-
 
       // 🌟 將選定的資訊轉化成 #標籤格式，放在訊息最上方讓系統解析
-
       let messageLines = [];
-
       messageLines.push(`#包商:${contractor}`);
-
       messageLines.push(`#發料人:${staff}`);
 
-
-
       for (const model in cart) {
-
         if (cart[model] > 0) {
-
           messageLines.push(`${model} ${cart[model]}`);
-
         }
-
       }
-
-
 
       document.getElementById("submit-btn").innerText = "⏳ 傳送中...";
-
       let messageText = messageLines.join("\n");
 
-
-
       liff.sendMessages([{ type: 'text', text: messageText }])
-
       .then(() => {
-
         liff.closeWindow(); 
-
       }).catch(err => {
-
         alert("傳送失敗：" + err.message);
-
         document.getElementById("submit-btn").innerText = "✅ 確認送出給系統";
-
       });
-
     }
-
-
 
     function filterItems() {
-
       const input = document.getElementById("searchInput").value.trim().toUpperCase();
-
       const listContainer = document.getElementById("item-list");
-
       const tabsContainer = document.getElementById("category-tabs");
-
       const noResultElem = document.getElementById("no-result");
 
-
-
       if (input === "") {
-
         tabsContainer.style.display = "flex";
-
         noResultElem.style.display = "none";
-
         renderItems(currentCategory);
-
         return;
-
       }
-
-
 
       tabsContainer.style.display = "none";
-
       listContainer.innerHTML = "";
-
       let visibleCount = 0;
 
-
-
       for (const cat in materialsData) {
-
         const categoryData = materialsData[cat];
 
-
-
         if (Array.isArray(categoryData)) {
-
           categoryData.forEach(model => {
-
             if (model.toUpperCase().indexOf(input) > -1) {
-
               listContainer.appendChild(createItemCard(model, cat)); 
-
               visibleCount++;
-
             }
-
           });
-
         } else {
-
           for (const freq in categoryData) {
-
             categoryData[freq].forEach(model => {
-
               if (model.toUpperCase().indexOf(input) > -1) {
-
                 listContainer.appendChild(createItemCard(model, cat)); 
-
                 visibleCount++;
-
               }
-
             });
-
           }
-
         }
-
       }
-
-
 
       if (noResultElem) {
-
         noResultElem.style.display = visibleCount === 0 ? "block" : "none";
-
         noResultElem.innerText = "全庫存中找不到符合的型號";
-
       }
-
     }
-
   </script>
-
 </body>
-
 </html>
-
