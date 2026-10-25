@@ -161,15 +161,31 @@
         fetch(urlStaffs).then(res => res.text())
       ])
       .then(results => {
-        // 1. 解析材料清單
+        // 1. 解析材料清單 (🌟 升級欄位自動偵測防呆)
         const matData = parseGVizData(results[0], '材料清單');
         materialsData = {};
         matData.table.rows.forEach(row => {
           if (!row.c) return;
           const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
-          const freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
-          const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
-          if (!cat || !model || cat === "大類別") return; 
+          if (!cat || cat === "大類別") return; 
+
+          let freq = "";
+          let model = "";
+
+          if (cat === "單體") {
+            // 單體的型號一定在 C 欄，頻率在 B 欄
+            freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
+            model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
+          } else {
+            // 🌟 智慧防呆：偵測非單體的型號是寫在 B 欄還是 C 欄
+            if (row.c[2] && row.c[2].v) {
+              model = row.c[2].v.toString().trim().toUpperCase(); // 填在 C 欄
+            } else if (row.c[1] && row.c[1].v) {
+              model = row.c[1].v.toString().trim().toUpperCase(); // 填在 B 欄
+            }
+          }
+
+          if (!model) return; // 如果 B 跟 C 欄都沒寫型號，就略過
 
           if (cat === "單體") {
             if (!materialsData[cat]) materialsData[cat] = {};
@@ -200,7 +216,6 @@
       })
       .catch(err => {
         console.error(err);
-        // 🌟 這裡能明確告訴你是哪裡出錯，不會再默默卡死
         document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red; font-size:14px; line-height:1.5;">❌ <b>資料同步失敗</b><br><br>${err.message}<br><br>請確認您的試算表名稱是否完全吻合。</div>`;
       });
     }
