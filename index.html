@@ -161,11 +161,15 @@
         fetch(urlStaffs).then(res => res.text())
       ])
       .then(results => {
-        // 1. 解析材料清單 (🌟 升級欄位自動偵測防呆)
-        const matData = parseGVizData(results[0], '材料清單');
+        // 1. 解析材料清單
+        const matMatch = results[0].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        const matData = JSON.parse(matMatch[1]);
         materialsData = {};
+        
         matData.table.rows.forEach(row => {
-          if (!row.c) return;
+          // 確保 row.c 有資料
+          if (!row.c || row.c.length === 0) return;
+          
           const cat = row.c[0] && row.c[0].v ? row.c[0].v.toString().trim().toUpperCase() : "";
           if (!cat || cat === "大類別") return; 
 
@@ -173,19 +177,16 @@
           let model = "";
 
           if (cat === "單體") {
-            // 單體的型號一定在 C 欄，頻率在 B 欄
+            // 單體一定有填頻率，所以是 [0]大類別 [1]頻率 [2]型號
             freq = row.c[1] && row.c[1].v ? row.c[1].v.toString().trim().toUpperCase() : "";
             model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
           } else {
-            // 🌟 智慧防呆：偵測非單體的型號是寫在 B 欄還是 C 欄
-            if (row.c[2] && row.c[2].v) {
-              model = row.c[2].v.toString().trim().toUpperCase(); // 填在 C 欄
-            } else if (row.c[1] && row.c[1].v) {
-              model = row.c[1].v.toString().trim().toUpperCase(); // 填在 B 欄
-            }
+            // 🌟 關鍵修正：天線沒有頻率(B欄空白)，陣列會縮短！我們直接抓陣列的最後一個值
+            const lastIndex = row.c.length - 1;
+            model = row.c[lastIndex] && row.c[lastIndex].v ? row.c[lastIndex].v.toString().trim().toUpperCase() : "";
           }
 
-          if (!model) return; // 如果 B 跟 C 欄都沒寫型號，就略過
+          if (!model) return; 
 
           if (cat === "單體") {
             if (!materialsData[cat]) materialsData[cat] = {};
@@ -198,25 +199,24 @@
         });
         renderCategoryTabs();
 
-        // 2. 解析包商名單
-        const conData = parseGVizData(results[1], '包商名單');
-        conData.table.rows.forEach(row => {
+        // 2. 解析包商名單 (維持原樣)
+        const conMatch = results[1].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        JSON.parse(conMatch[1]).table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "包商名稱") {
              contractorList.push(row.c[0].v.toString().trim());
           }
         });
 
-        // 3. 解析員工名單
-        const staffData = parseGVizData(results[2], '員工名單');
-        staffData.table.rows.forEach(row => {
+        // 3. 解析員工名單 (維持原樣)
+        const staffMatch = results[2].match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        JSON.parse(staffMatch[1]).table.rows.forEach(row => {
           if (row.c && row.c[0] && row.c[0].v && row.c[0].v !== "員工姓名" && row.c[0].v !== "張景閔") {
              staffList.push(row.c[0].v.toString().trim());
           }
         });
       })
       .catch(err => {
-        console.error(err);
-        document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red; font-size:14px; line-height:1.5;">❌ <b>資料同步失敗</b><br><br>${err.message}<br><br>請確認您的試算表名稱是否完全吻合。</div>`;
+        document.getElementById("item-list").innerHTML = `<div class="loader" style="color:red;">❌ 資料同步失敗，請重整畫面: ${err.message}</div>`;
       });
     }
 
