@@ -172,7 +172,7 @@
           const model = row.c[2] && row.c[2].v ? row.c[2].v.toString().trim().toUpperCase() : "";
           if (!cat || !model || cat === "大類別") return; 
 
-          if (cat === "單體") {
+          if (cat === "單體" || cat === "天線") {
             if (!materialsData[cat]) materialsData[cat] = {};
             if (!materialsData[cat][freq]) materialsData[cat][freq] = [];
             materialsData[cat][freq].push(model);
