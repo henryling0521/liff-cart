@@ -248,7 +248,11 @@
         for (const freq in categoryData) {
           let header = document.createElement("div");
           header.className = "freq-header";
-          header.innerText = `【頻率: ${freq}】`;
+          
+          // 🌟 動態判斷：如果是天線就顯示「廠牌」，其他（如單體）就顯示「頻率」
+          let labelText = (category === "天線") ? "廠牌" : "頻率";
+          header.innerText = `【${labelText}: ${freq}】`;
+          
           listContainer.appendChild(header);
           categoryData[freq].forEach(model => listContainer.appendChild(createItemCard(model)));
         }
