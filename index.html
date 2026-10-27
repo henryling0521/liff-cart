@@ -241,11 +241,12 @@
       const listContainer = document.getElementById("item-list");
       listContainer.innerHTML = "";
       const categoryData = materialsData[category];
-
+      console.log("目前類別:", category, "對應的資料結構:", categoryData); // 👈 檢查 F12 主控台
       if (Array.isArray(categoryData)) {
         categoryData.forEach(model => listContainer.appendChild(createItemCard(model)));
       } else {
         for (const freq in categoryData) {
+          console.log("抓到的 freq/subKey 是:", freq); // 👈 檢查這裡有沒有值
           let header = document.createElement("div");
           header.className = "freq-header";
           
