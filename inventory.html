@@ -238,22 +238,62 @@
       });
     }
 
-    // 本地快速篩選
+    // 本地快速篩選 (全庫存跨類別搜尋)
     function filterInventory() {
-      const input = document.getElementById("searchInput").value.toUpperCase();
-      const cards = document.querySelectorAll(".item-card");
+      const input = document.getElementById("searchInput").value.trim().toUpperCase();
+      const listContainer = document.getElementById("inventory-list");
+      const tabsContainer = document.getElementById("category-tabs");
+      const noResultElem = document.getElementById("no-result");
+
+      // 1. 如果輸入框是空的，還原原本的分類畫面
+      if (input === "") {
+        if (tabsContainer) tabsContainer.style.display = "flex";
+        if (noResultElem) noResultElem.style.display = "none";
+        renderItems(currentCategory); // 重新渲染當前選取的大類別
+        return;
+      }
+
+      // 2. 有輸入關鍵字：隱藏上方分類頁籤，清空畫面準備全庫存搜尋
+      if (tabsContainer) tabsContainer.style.display = "none";
+      listContainer.innerHTML = "";
       let visibleCount = 0;
 
-      cards.forEach(card => {
-        const modelName = card.querySelector(".item-name").innerText.toUpperCase();
-        if (modelName.indexOf(input) > -1) {
-          card.style.display = "flex";
-          visibleCount++;
-        } else {
-          card.style.display = "none";
-        }
-      });
-      document.getElementById("no-result").style.display = visibleCount === 0 ? "block" : "none";
+      // 3. 遍歷全庫存所有大類別 (materialsMenu)
+      for (const cat in materialsMenu) {
+        const models = materialsMenu[cat];
+
+        models.forEach(model => {
+          // 只要型號名稱包含輸入的關鍵字
+          if (model.toUpperCase().indexOf(input) > -1) {
+            let qty = inventoryData[model] || 0;
+            let qtyClass = "item-qty";
+            if (qty === 0) qtyClass += " qty-zero";
+            else if (qty <= 3) qtyClass += " qty-low";
+
+            const safeModel = encodeURIComponent(model);
+            let card = document.createElement("div");
+            card.className = "item-card";
+            card.onclick = () => openHistory(safeModel);
+            
+            // 🌟 貼心優化：在搜尋出來的卡片上方，加上小小的【所屬類別】標籤，找料更清晰
+            card.innerHTML = `
+              <div class="item-name">
+                <span style="font-size: 11px; color: #888; display: block; margin-bottom: 2px;">【${cat}】</span>
+                ${model}
+              </div>
+              <div class="${qtyClass}">${qty}</div>
+            `;
+            listContainer.appendChild(card);
+            visibleCount++;
+          }
+        });
+      }
+
+      // 4. 控制「找不到結果」提示
+      if (noResultElem) {
+        noResultElem.style.display = visibleCount === 0 ? "block" : "none";
+        noResultElem.innerText = "全庫存中找不到符合的型號";
+      }
     }
 
     // ==========================================
