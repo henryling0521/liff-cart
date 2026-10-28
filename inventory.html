@@ -238,58 +238,22 @@
       });
     }
 
-    // 本地快速篩選 (全庫存跨類別搜尋)
+    // 本地快速篩選
     function filterInventory() {
-      const input = document.getElementById("searchInput").value.trim().toUpperCase();
-      const listContainer = document.getElementById("item-list");
-      const tabsContainer = document.getElementById("category-tabs");
-      const noResultElem = document.getElementById("no-result");
-
-      // 1. 如果輸入框是空的，還原原本的分類畫面
-      if (input === "") {
-        if (tabsContainer) tabsContainer.style.display = "flex";
-        if (noResultElem) noResultElem.style.display = "none";
-        renderInventory(currentCategory); // 還原渲染當前分類
-        return;
-      }
-
-      // 2. 有輸入關鍵字：隱藏分類頁籤，清空畫面準備全庫存搜尋
-      if (tabsContainer) tabsContainer.style.display = "none";
-      listContainer.innerHTML = "";
+      const input = document.getElementById("searchInput").value.toUpperCase();
+      const cards = document.querySelectorAll(".item-card");
       let visibleCount = 0;
 
-      // 3. 遍歷全庫存所有大類別
-      for (const cat in materialsData) {
-        const categoryData = materialsData[cat];
-
-        // 情況 A：純陣列類別 (沒有 B 欄次分類)
-        if (Array.isArray(categoryData)) {
-          categoryData.forEach(model => {
-            if (model.toUpperCase().indexOf(input) > -1) {
-              listContainer.appendChild(createInventoryCard(model, cat)); // 傳入 cat 讓卡片知道屬於哪個類別
-              visibleCount++;
-            }
-          });
-        } 
-        // 情況 B：多層結構 (單體、天線，有 B 欄次分類)
-        else {
-          for (const subKey in categoryData) {
-            categoryData[subKey].forEach(model => {
-              if (model.toUpperCase().indexOf(input) > -1) {
-                // 生出卡片時，可將次分類標籤傳入 (如：單體 - 3500)
-                listContainer.appendChild(createInventoryCard(model, `${cat} (${subKey})`));
-                visibleCount++;
-              }
-            });
-          }
+      cards.forEach(card => {
+        const modelName = card.querySelector(".item-name").innerText.toUpperCase();
+        if (modelName.indexOf(input) > -1) {
+          card.style.display = "flex";
+          visibleCount++;
+        } else {
+          card.style.display = "none";
         }
-      }
-
-      // 4. 控制「找不到結果」提示
-      if (noResultElem) {
-        noResultElem.style.display = visibleCount === 0 ? "block" : "none";
-        noResultElem.innerText = "全庫存中找不到符合的型號";
-      }
+      });
+      document.getElementById("no-result").style.display = visibleCount === 0 ? "block" : "none";
     }
 
     // ==========================================
